@@ -1,0 +1,259 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ELEB1G Worship Day Photobooth</title>
+<style>
+@font-face{font-family:Allura;src:url(fonts/allura-latin-400-normal.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Instrument Serif";src:url(fonts/instrument-serif-latin-400-normal.woff2) format("woff2");font-display:swap}
+@font-face{font-family:Figtree;font-weight:500;src:url(fonts/figtree-latin-500-normal.woff2) format("woff2");font-display:swap}
+@font-face{font-family:Figtree;font-weight:700;src:url(fonts/figtree-latin-700-normal.woff2) format("woff2");font-display:swap}
+:root{--ink:#2c0e10;--red:#d63c30;--rose:#a9524f;--amber:#ff9d8a;--sun:#ff9d8a;--cream:#fff1ea;--mute:rgba(255,241,234,.82)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--cream);font-family:Figtree,system-ui,sans-serif;overflow:hidden}
+body::after{content:"";position:fixed;inset:0;z-index:8;pointer-events:none;opacity:.1;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.s{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 5vw}
+.s.on{display:flex}
+#idle{background:radial-gradient(ellipse at 10% 6%,rgba(214,60,48,.8),transparent 52%),radial-gradient(ellipse at 92% 96%,rgba(214,60,48,.6),transparent 50%),linear-gradient(160deg,rgba(181,98,94,.9),rgba(126,48,47,.95));backdrop-filter:blur(16px) saturate(1.1);-webkit-backdrop-filter:blur(16px) saturate(1.1)}
+.spark{position:absolute;width:clamp(36px,7vh,84px);aspect-ratio:1;filter:drop-shadow(0 0 10px #fff);animation:tw 3.4s ease-in-out infinite;pointer-events:none}
+.sp1{top:7vh;left:5vw}.sp2{bottom:15vh;right:6vw;animation-delay:1.1s}.sp3{top:46vh;left:2.2vw;width:clamp(24px,4.5vh,52px);animation-delay:2s}
+@keyframes tw{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+.home{display:grid;gap:3vh;justify-items:center;width:min(1180px,100%)}
+@media (min-aspect-ratio:3/2){.home{grid-template-columns:1.05fr .95fr;gap:5vw;justify-items:stretch;align-items:center}}
+.left{display:flex;flex-direction:column;align-items:center;gap:1.8vh}
+.logos{display:flex;gap:4vw;align-items:center;justify-content:center}.logos img{height:clamp(26px,4.6vh,52px);width:auto}
+.title{margin:0;display:flex;flex-direction:column;align-items:center;font-weight:400}
+.script{font:400 min(16vh,18vw)/1.05 Allura,cursive;color:#fff;text-shadow:0 0 30px rgba(255,255,255,.4);margin-bottom:-.1em}
+.love{display:flex;align-items:center;gap:.06em;font:400 min(17vh,19vw)/1 "Instrument Serif",serif;color:#fff;transform:scaleY(1.18);letter-spacing:.06em}
+.heart{width:.92em;height:.84em;overflow:visible;margin:0 .02em}
+.brand{font:500 clamp(14px,2.1vh,22px)/1.3 Figtree,sans-serif;letter-spacing:.2em;text-transform:uppercase}
+.how{background:rgba(44,14,16,.4);border:1px solid rgba(255,241,234,.3);border-radius:22px;padding:3vh 2.4vw;text-align:left;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);width:100%;max-width:560px}
+.how h2{font:400 clamp(30px,5vh,52px)/1 Allura,cursive;margin:0 0 1.6vh}
+.how ol{list-style:none;margin:0;padding:0;display:grid;gap:1.7vh;counter-reset:n}
+.how li{counter-increment:n;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;font-size:clamp(14px,2vh,19px);line-height:1.35;color:var(--mute)}
+.how li::before{content:counter(n);display:grid;place-items:center;width:1.9em;height:1.9em;border-radius:50%;background:var(--cream);color:var(--ink);font-weight:700}
+.how li b{color:#fff}
+.noemail .needs-email{display:none}
+.foot{position:absolute;bottom:2.2vh;left:0;right:0;font:400 clamp(16px,2.6vh,26px) "Instrument Serif",serif;letter-spacing:.06em}
+.verse{font:italic 400 clamp(20px,3vh,34px)/1.2 "Instrument Serif",serif}
+p{font-size:clamp(16px,2.2vh,24px);margin:0;color:var(--mute)}
+button{font:700 clamp(18px,2.6vh,26px) Figtree,sans-serif;border:0;border-radius:999px;padding:.7em 2.2em;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 0 40px rgba(255,157,138,.45)}
+button.ghost{background:transparent;color:var(--cream);border:2px solid var(--cream);box-shadow:none}
+button:disabled{opacity:.5}
+button:focus-visible,input:focus-visible{outline:4px solid var(--amber);outline-offset:3px}
+#go{font-size:clamp(22px,3.4vh,34px);padding:.75em 3em;margin-top:1vh}
+#cd{padding-right:44vw;background:radial-gradient(ellipse at center,rgba(44,14,16,.4) 30%,rgba(44,14,16,.88))}
+#shotLbl{font:400 clamp(30px,6vh,64px) Allura,cursive;color:var(--cream);text-shadow:0 2px 20px #000}
+#count{font:400 min(44vh,60vw)/.9 "Instrument Serif",serif;color:var(--cream);text-shadow:0 4px 24px rgba(0,0,0,.8),0 0 70px rgba(0,0,0,.6);min-height:.9em}
+.tick{animation:tick .4s ease-out}
+@keyframes tick{from{transform:scale(1.25)}to{transform:none}}
+#dots{display:flex;gap:14px;height:16px}#dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--cream)}
+#dots i.done{background:var(--cream)}#dots i.now{background:var(--amber);border-color:var(--amber);box-shadow:0 0 14px var(--amber)}
+#strip{position:absolute;right:3vw;top:50%;transform:translateY(-50%);border:6px solid var(--cream);border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6);background:#000}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s;z-index:7}
+#review,#thanks{background:radial-gradient(ellipse at 12% 8%,rgba(214,60,48,.6),transparent 55%),radial-gradient(ellipse at 90% 95%,rgba(214,60,48,.4),transparent 50%),linear-gradient(160deg,#6e2a2b,#2c0e10)}
+#result{max-height:56vh;max-width:90vw;border:8px solid var(--cream);border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+input{font:500 clamp(18px,2.6vh,26px) Figtree,sans-serif;border:0;border-radius:999px;padding:.7em 1.4em;width:min(520px,90vw);background:var(--cream);color:var(--ink);text-align:center}
+small{max-width:480px;color:var(--mute);font-size:clamp(13px,1.8vh,16px)}
+#emailBox{display:flex;flex-direction:column;align-items:center;gap:1.2vh}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.noemail #emailBox,.noemail #send{display:none}
+.noemail #skip{background:var(--cream);color:var(--ink);border:0;box-shadow:0 0 40px rgba(255,157,138,.45)}
+.thx{font:400 min(24vh,22vw)/1 Allura,cursive;margin:0;text-shadow:0 0 30px rgba(255,255,255,.35)}
+#gear{position:fixed;top:14px;right:14px;z-index:9;padding:.5em 1.2em;font-size:16px;background:rgba(44,14,16,.55);color:var(--cream);border:1px solid rgba(255,241,234,.5);box-shadow:none}
+body.busy #gear,body.busy #admin{display:none!important}
+#admin{position:fixed;top:60px;right:14px;z-index:9;background:var(--cream);color:var(--ink);padding:18px;border-radius:14px;display:none;flex-direction:column;gap:12px;font-size:16px;width:300px;text-align:left}
+#admin.on{display:flex}
+#admin select,#admin input{font-size:16px;padding:8px;border-radius:8px;width:100%;background:#fff;border:1px solid #ccc;text-align:left}
+#admin label.chk{display:flex;gap:10px;align-items:center}#admin input[type=checkbox]{width:auto}
+#admin button{font-size:16px;padding:10px 18px;box-shadow:none;background:var(--ink);color:var(--cream)}
+@media (prefers-reduced-motion:reduce){.tick,.spark{animation:none}}
+</style>
+<video id="cam" autoplay playsinline muted></video>
+<div id="flash"></div>
+<button id="gear">⚙ Settings &amp; frame</button>
+<div id="admin"><b>Booth settings</b>
+ <label>Camera<select id="camSel"></select></label>
+ <label>Digital frame (PNG)<input type="file" id="frameIn" accept="image/png"></label>
+ <img id="framePrev" alt="Current frame" style="display:none;max-height:140px;object-fit:contain;background:#bbb;border-radius:8px">
+ <label>Get-ready countdown (seconds)<input type="number" id="prepIn" min="0" max="60"></label>
+ <label>Countdown between photos (seconds)<input type="number" id="secIn" min="1" max="10"></label>
+ <label class="chk"><input type="checkbox" id="sndIn"> Sounds</label>
+ <label class="chk"><input type="checkbox" id="mirIn"> Mirror preview &amp; photos</label>
+ <span id="adminMsg"></span>
+ <button id="test" style="font-size:16px;padding:10px 18px">Test frame with a sample photo</button></div>
+
+<section class="s on" id="idle">
+ <svg class="spark sp1" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0 L58 42 L100 50 L58 58 L50 100 L42 58 L0 50 L42 42Z" fill="#fff"/></svg><svg class="spark sp2" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0 L58 42 L100 50 L58 58 L50 100 L42 58 L0 50 L42 42Z" fill="#fff"/></svg><svg class="spark sp3" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0 L58 42 L100 50 L58 58 L50 100 L42 58 L0 50 L42 42Z" fill="#fff"/></svg>
+ <div class="home">
+  <div class="left">
+   <div class="logos"><img src="img/elevate.png" alt="Elevate Angono"><img src="img/b1g.png" alt="B1G Angono"></div>
+   <h1 class="title"><span class="script">everlasting</span>
+    <span class="love" aria-label="Love"><span>L</span>
+     <svg class="heart" viewBox="0 0 100 90" aria-hidden="true"><defs><filter id="gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+      <path d="M50 84 C8 54 4 30 20 15 C33 3 46 10 50 24 C54 10 67 3 80 15 C96 30 92 54 50 84Z" fill="none" stroke="#fff" stroke-width="12" filter="url(#gl)"/>
+      <path d="M50 84 C8 54 4 30 20 15 C33 3 46 10 50 24 C54 10 67 3 80 15 C96 30 92 54 50 84Z" fill="none" stroke="#fff" stroke-width="4" opacity=".9"/></svg>
+     <span>VE</span></span></h1>
+   <div class="brand">ELEB1G Worship Day &middot; October Praise 2026</div>
+   <p id="tag"></p>
+   <button id="go">Start</button>
+  </div>
+  <div class="how"><h2>How it works</h2><ol>
+   <li><span><b>Tap Start</b> and get ready. You have <span id="nPrep">10</span> seconds to find your pose.</span></li>
+   <li><span><b>Strike <span id="nPh">4</span> poses.</b> Watch the strip on the right to see how you fit in the frame.</span></li>
+   <li><span><b>Want a redo?</b> Tap <b>Retake</b>. You'll get the countdown again, and the second set will be saved or sent.</span></li>
+   <li class="needs-email"><span><b>Enter your email</b> when your photo strip appears.</span></li>
+   <li class="needs-email"><span><b>Save your strip.</b> Open your email, then on a phone, press and hold the photo and tap Save to Photos. On a computer, right-click it and choose Save image as.</span></li>
+  </ol></div>
+ </div>
+ <div class="foot">Oct 24, 2PM &nbsp;|&nbsp; CCF Angono, Level 3, SM Center Angono</div></section>
+<section class="s" id="cd"><div id="shotLbl"></div><div id="count"></div><div id="dots"></div><canvas id="strip"></canvas></section>
+<section class="s" id="review"><img id="result" alt="Your photo strip">
+ <div id="emailBox"><input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+ <small>We'll email your photos and keep a copy of them. Skip if you'd rather not share your email.</small></div>
+ <div class="row"><button class="ghost" id="retake">Retake</button><button id="send">Email my photos</button><button class="ghost" id="skip">No thanks</button></div></section>
+<section class="s" id="thanks"><div class="logos"><img src="img/elevate.png" alt="Elevate Angono"><img src="img/b1g.png" alt="B1G Angono"></div><h1 class="thx">Thank you</h1><p id="thanksMsg"></p><div class="verse">“I have loved thee with an everlasting love.” Jeremiah 31:3</div></section>
+
+<script>
+// ---- Settings you can change ----
+const CFG = { W:1200, H:1800, COUNT:4, SECONDS:5, BG:'#2c0e10',
+  // photo slots on the strip: x, y, width, height (pixels on the 1200x1800 canvas)
+  SLOTS:[{x:100,y:70,w:1000,h:360},{x:100,y:470,w:1000,h:360},{x:100,y:870,w:1000,h:360},{x:100,y:1270,w:1000,h:360}] };
+const $ = id => document.getElementById(id), cam = $('cam'), sleep = ms => new Promise(r => setTimeout(r, ms));
+const show = id => { document.body.classList.toggle('busy', id !== 'idle'); document.querySelectorAll('.s').forEach(s => s.classList.toggle('on', s.id === id)); };
+CFG.PREP = localStorage.prep !== undefined ? +localStorage.prep : 10; CFG.SECONDS = +localStorage.sec || CFG.SECONDS;
+$('prepIn').value = CFG.PREP; $('secIn').value = CFG.SECONDS;
+$('prepIn').onchange = e => { CFG.PREP = Math.max(0, +e.target.value || 0); localStorage.prep = CFG.PREP; syncHome(); };
+$('secIn').onchange = e => { CFG.SECONDS = Math.max(1, +e.target.value || 3); localStorage.sec = CFG.SECONDS; };
+const tick = n => { const e = $('count'); e.textContent = n; e.classList.remove('tick'); void e.offsetWidth; e.classList.add('tick'); beep(n); };
+let EMAIL = true, SOUND = localStorage.snd !== '0', MIRROR = localStorage.mir !== '0', shotImgs = [], stripOn = false, AC = null;
+cam.style.transform = MIRROR ? 'scaleX(-1)' : 'none';
+const ac = () => { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; };
+function tone(f, d = .15, t = 0, type = 'sine', v = .25) {
+  if (!SOUND) return; const a = ac(), o = a.createOscillator(), g = a.createGain(), st = a.currentTime + t;
+  o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(v, st + .01); g.gain.exponentialRampToValueAtTime(.001, st + d);
+  o.connect(g); g.connect(a.destination); o.start(st); o.stop(st + d + .05);
+}
+function beep(n) { n <= 3 ? tone(880, .18, 0, 'sine', .3) : tone(520, .06, 0, 'sine', .1); }
+function shutter() {
+  if (!SOUND) return; const a = ac(), b = a.createBuffer(1, a.sampleRate * .15, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+  const n = a.createBufferSource(), g = a.createGain(); g.gain.value = .5; n.buffer = b; n.connect(g); g.connect(a.destination); n.start(); tone(1400, .05, 0, 'square', .08);
+}
+const doneChime = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .45, i * .13, 'triangle', .3));
+function drawStrip() {
+  const c = $('strip'), k = Math.min(1, 520 / Math.max(CFG.W, CFG.H)), cw = Math.round(CFG.W * k), ch = Math.round(CFG.H * k), asp = CFG.W / CFG.H;
+  if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+  const dw = Math.min(innerWidth * .36, innerHeight * .88 * asp); c.style.width = dw + 'px'; c.style.height = dw / asp + 'px';
+  const x = c.getContext('2d'); x.fillStyle = CFG.BG; x.fillRect(0, 0, cw, ch);
+  CFG.SLOTS.forEach((sl, i) => {
+    const live = i === shots.length, im = shotImgs[i]; if (!live && !(im && im.complete)) return;
+    const src = live ? cam : im, sw = live ? cam.videoWidth : im.width, sh = live ? cam.videoHeight : im.height; if (!sw) return;
+    const X = sl.x * k, Y = sl.y * k, W = sl.w * k, H = sl.h * k, z = Math.max(W / sw, H / sh), w = sw * z, h = sh * z;
+    x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip();
+    if (live && MIRROR) { x.translate(2 * X + W, 0); x.scale(-1, 1); }
+    x.drawImage(src, X + (W - w) / 2, Y + (H - h) / 2, w, h); x.restore();
+  });
+  if (frame) x.drawImage(frame, 0, 0, cw, ch);
+  const cur = CFG.SLOTS[shots.length]; if (cur) { x.strokeStyle = '#ff9d8a'; x.lineWidth = 3; x.strokeRect(cur.x * k, cur.y * k, cur.w * k, cur.h * k); }
+}
+function loop() { if (!stripOn) return; drawStrip(); requestAnimationFrame(loop); }
+fetch('/api/config').then(r => r.json()).then(c => { EMAIL = c.email; document.body.classList.toggle('noemail', !EMAIL); $('skip').textContent = EMAIL ? 'No thanks' : 'Done'; }).catch(() => {});
+let frame = null, shots = [], final = '', testMode = false;
+
+async function startCam(deviceId) {
+  if (cam.srcObject) cam.srcObject.getTracks().forEach(t => t.stop());
+  cam.srcObject = await navigator.mediaDevices.getUserMedia({ video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+  const list = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  const cur = cam.srcObject.getVideoTracks()[0].getSettings().deviceId;
+  $('camSel').innerHTML = list.map(d => `<option value="${d.deviceId}" ${d.deviceId === cur ? 'selected' : ''}>${d.label || 'Camera'}</option>`).join('');
+}
+const DEF = CFG.SLOTS.slice(), NUM = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+function syncHome() { $('nPh').textContent = CFG.COUNT; $('nPrep').textContent = CFG.PREP; }
+function setSlots(list, msg) {
+  if (list === DEF) { CFG.W = 1200; CFG.H = 1800; }
+  CFG.SLOTS = list; CFG.COUNT = list.length; $('adminMsg').textContent = msg;
+  syncHome(); $('idle').querySelector('p').textContent = `${NUM[CFG.COUNT]} photo${CFG.COUNT > 1 ? 's' : ''}. Ready when you are.`;
+}
+// Finds the transparent windows in the frame and uses them as photo slots (top to bottom, left to right).
+function detect() {
+  CFG.W = frame.naturalWidth; CFG.H = frame.naturalHeight;
+  const sc = Math.max(1, Math.round(Math.max(CFG.W, CFG.H) / 450)), w = Math.round(CFG.W / sc), h = Math.round(CFG.H / sc), kx = CFG.W / w, ky = CFG.H / h, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(frame, 0, 0, w, h);
+  const a = g.getImageData(0, 0, w, h).data, seen = new Uint8Array(w * h), boxes = [], pad = Math.max(2, sc);
+  for (let s0 = 0; s0 < w * h; s0++) {
+    if (seen[s0] || a[s0 * 4 + 3] > 127) continue;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0; const st = [s0]; seen[s0] = 1;
+    while (st.length) {
+      const p = st.pop(), px = p % w, py = (p / w) | 0; n++;
+      if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+      const nb = []; if (px > 0) nb.push(p - 1); if (px < w - 1) nb.push(p + 1); if (py > 0) nb.push(p - w); if (py < h - 1) nb.push(p + w);
+      for (const q of nb) if (!seen[q] && a[q * 4 + 3] <= 127) { seen[q] = 1; st.push(q); }
+    }
+    if (n > w * h * 0.01) boxes.push({ x: x0 * kx - pad, y: y0 * ky - pad, w: (x1 - x0 + 1) * kx + pad * 2, h: (y1 - y0 + 1) * ky + pad * 2 });
+  }
+  boxes.sort((p, q) => Math.abs(p.y + p.h / 2 - q.y - q.h / 2) > Math.min(p.h, q.h) / 2 ? (p.y + p.h / 2) - (q.y + q.h / 2) : p.x - q.x);
+  if (boxes.length && boxes.length <= 10) setSlots(boxes, `Frame loaded: found ${boxes.length} photo window${boxes.length > 1 ? 's' : ''}.`);
+  else setSlots(DEF, 'No transparent windows found in this frame. Using the default layout.');
+}
+const loadFrame = () => { const i = new Image();
+  i.onload = () => { frame = i; $('framePrev').src = i.src; $('framePrev').style.display = 'block'; detect(); };
+  i.onerror = () => { frame = null; setSlots(DEF, 'No frame uploaded yet.'); };
+  i.src = '/frame.png?' + Date.now(); };
+
+function grab() {
+  const c = document.createElement('canvas'); c.width = cam.videoWidth; c.height = cam.videoHeight;
+  const g = c.getContext('2d'); if (MIRROR) { g.translate(c.width, 0); g.scale(-1, 1); } g.drawImage(cam, 0, 0); return c.toDataURL('image/jpeg', .92);
+}
+const img = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+
+async function compose() {
+  const c = document.createElement('canvas'); c.width = CFG.W; c.height = CFG.H;
+  const x = c.getContext('2d'); x.fillStyle = CFG.BG; x.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < shots.length; i++) {
+    const s = CFG.SLOTS[i], p = await img(shots[i]), k = Math.max(s.w / p.width, s.h / p.height), w = p.width * k, h = p.height * k;
+    x.save(); x.beginPath(); x.rect(s.x, s.y, s.w, s.h); x.clip(); x.drawImage(p, s.x + (s.w - w) / 2, s.y + (s.h - h) / 2, w, h); x.restore();
+  }
+  if (frame) x.drawImage(frame, 0, 0, c.width, c.height);
+  else { x.fillStyle = '#fff1ea'; x.textAlign = 'center'; x.font = '78px "Instrument Serif", serif'; x.fillText('ELEB1G Worship Day', c.width / 2, c.height - 85); x.font = '30px Figtree, sans-serif'; x.fillText('Oct 24, 2PM | CCF Angono, Level 3, SM Center Angono', c.width / 2, c.height - 32); }
+  return c.toDataURL('image/jpeg', .9);
+}
+
+async function session() {
+  shots = []; shotImgs = []; stripOn = true; loop();
+  if (CFG.PREP > 0) { show('cd'); $('shotLbl').textContent = 'Get ready! Photos start in…'; $('dots').innerHTML = ''; for (let n = CFG.PREP; n > 0; n--) { tick(n); await sleep(1000); } }
+  for (let i = 1; i <= CFG.COUNT; i++) {
+    show('cd'); $('shotLbl').textContent = `Photo ${i} of ${CFG.COUNT}`; $('dots').innerHTML = Array.from({ length: CFG.COUNT }, (_, k) => `<i class="${k < i - 1 ? 'done' : k === i - 1 ? 'now' : ''}"></i>`).join('');
+    for (let n = (i === 1 && CFG.PREP > 0) ? 0 : CFG.SECONDS; n > 0; n--) { tick(n); await sleep(1000); }
+    $('count').textContent = ''; $('flash').style.opacity = 1; { const d = grab(), im = new Image(); im.src = d; shots.push(d); shotImgs.push(im); shutter(); } await sleep(80); $('flash').style.opacity = 0; await sleep(700);
+  }
+  stripOn = false; doneChime(); final = await compose(); $('result').src = final; $('email').value = ''; show('review');
+}
+
+async function finish(email) {
+  if (testMode) { testMode = false; show('idle'); return; }
+  $('send').disabled = $('skip').disabled = true;
+  try {
+    await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots }) });
+    $('thanksMsg').textContent = email ? 'Your photos are on their way to your inbox.' : 'Thanks for stopping by!';
+  } catch { $('thanksMsg').textContent = 'Something went wrong saving your photos. Please tell the host.'; }
+  show('thanks'); await sleep(5000); $('send').disabled = $('skip').disabled = false; show('idle');
+}
+
+$('go').onclick = () => { ac(); session(); };
+$('send').onclick = () => { const v = $('email').value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) { $('email').focus(); $('email').style.outline = '4px solid var(--sun)'; return; } finish(v); };
+$('skip').onclick = () => finish('');
+$('retake').onclick = () => { testMode = false; ac(); session(); };
+$('sndIn').checked = SOUND; $('mirIn').checked = MIRROR;
+$('sndIn').onchange = e => { SOUND = e.target.checked; localStorage.snd = SOUND ? '1' : '0'; if (SOUND) { ac(); tone(880, .15); } };
+$('mirIn').onchange = e => { MIRROR = e.target.checked; localStorage.mir = MIRROR ? '1' : '0'; cam.style.transform = MIRROR ? 'scaleX(-1)' : 'none'; };
+$('gear').onclick = () => $('admin').classList.toggle('on');
+$('camSel').onchange = e => { localStorage.cam = e.target.value; startCam(e.target.value); };
+$('frameIn').onchange = e => { const f = e.target.files[0]; if (!f) return; const i = new Image();
+  i.onload = async () => { const k = Math.min(1, 3000 / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
+    try { const r = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: c.toDataURL('image/png') }) }); if (!r.ok) throw 0; loadFrame(); }
+    catch { $('adminMsg').textContent = 'Could not save the frame. Make sure the booth is still running (npm start).'; } };
+  i.onerror = () => $('adminMsg').textContent = 'That file could not be read as an image.'; i.src = URL.createObjectURL(f); };
+$('test').onclick = async () => { if (!cam.videoWidth) { $('adminMsg').textContent = 'Camera not ready yet.'; return; }
+  const g = grab(); shots = CFG.SLOTS.map(() => g); final = await compose(); testMode = true; $('result').src = final; $('email').value = ''; show('review'); };
+
+startCam(localStorage.cam).catch(() => startCam()).catch(() => { $('idle').querySelector('p').textContent = 'No camera found. Connect one, then reload.'; });
+loadFrame();
+</script></html>

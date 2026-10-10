@@ -1,0 +1,11 @@
+{
+  "name": "photobooth",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^10.0.16"
+  }
+}
