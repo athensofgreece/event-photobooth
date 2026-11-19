@@ -2,7 +2,7 @@
 
 A kiosk photobooth for live events. Guests take a multi-shot photo strip, and it is emailed to them automatically, even when the venue Wi-Fi drops.
 
-![Screenshot of the photobooth kiosk screen](docs/screenshot.png)
+![Screenshot of the photobooth kiosk screen](screenshot.png)
 
 ## Overview
 
