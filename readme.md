@@ -1,89 +1,111 @@
-# 📸 Node.js Event Photobooth & Kiosk System
+# 📸 Event Photobooth
 
-A full-stack Node.js and Express web application designed for live events, weddings, and church gatherings. It features automated webcam multi-shot capture, dynamic overlay frame rendering, local session logging, and a fault-tolerant background email queue to deliver high-resolution photo strips directly to guests in real time.
+A kiosk photobooth for live events. Guests take a multi-shot photo strip, and it is emailed to them automatically, even when the venue Wi-Fi drops.
 
----
+![Screenshot of the photobooth kiosk screen](docs/screenshot.png)
 
-## 🚀 Key Features
+## Overview
 
-* **Automated Multi-Shot Capture:** Seamlessly sequences photo sessions and merges captures into custom strip layouts using transparent frame templates.
-* **Fault-Tolerant Background Email Queue:** Built specifically for event venues with unreliable Wi-Fi. Photos are written to local disk first, and an async background process retries failed email dispatches every 30 seconds via `nodemailer`.
-* **Local File-System Management:** Automatically organizes guest sessions into distinct directories, writes `session.json` state files, compiles metadata into a `emails.csv` log, and dynamically serves PNG frames.
-* **Kiosk Interface:** Configured for standalone desktop operation (e.g., Google Chrome in full-screen kiosk mode) with camera settings and custom frame testing built into the UI.
+Event venues often have unreliable internet. A photobooth that sends photos straight to email fails exactly when guests are watching.
 
----
+This app saves every session to local disk first, then sends emails from a background queue that retries until they go through. The guest never waits on the network.
 
-## 🛠️ Tech Stack
+Built for weddings, church gatherings, and other live events.
 
-* **Backend:** Node.js, Express.js
-* **Email Transport:** Nodemailer (SMTP / Brevo integration)
-* **Storage / Persistence:** Node.js File System (`fs`), JSON metadata, CSV logs
-* **Frontend:** HTML5, CSS3, JavaScript (DOM / Canvas API)
+## Key features
 
----
+- **Multi-shot capture:** the webcam takes a sequence of shots and combines them into a strip using a transparent frame image. **[VERIFY: composed in the browser with Canvas]**
+- **Offline-safe email queue:** a background worker retries failed sends every 30 seconds.
+- **Session logging:** each guest session gets its own folder with a `session.json` file, and addresses are logged to `emails.csv`.
+- **Swappable frames:** upload a new overlay frame from the kiosk UI, no code change needed.
+- **Kiosk-ready:** runs full-screen in Chrome on a standalone machine.
 
-## ⚙️ Local Setup & Configuration
+## Tech stack
 
-### Prerequisites
-* **Node.js:** v20.0.0 or higher
+| Layer | Tools |
+| --- | --- |
+| Server | Node.js 20.6+, Express 4 |
+| Email | Nodemailer over SMTP (Gmail app password or Brevo) |
+| Storage | File system: JSON session files and a CSV log |
+| Front end | HTML, CSS, JavaScript, Canvas API, `getUserMedia` |
 
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/photobooth.git
-   cd photobooth
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables:**
-   Copy the example environment template and configure your SMTP credentials (e.g., Gmail App Passwords or SMTP Relay):
-   ```bash
-   cp .env.example .env
-   ```
-
-   *Example `.env` configuration:*
-   ```env
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=yourbooth@gmail.com
-   SMTP_PASS=your-app-password
-   MAIL_FROM="Our Photobooth <yourbooth@gmail.com>"
-   MAIL_SUBJECT="Your photobooth pictures!"
-   ```
-
-4. **Start the Server:**
-   ```bash
-   npm start
-   ```
-
-5. **Launch Kiosk Mode:**
-   Open Chrome in full-screen kiosk mode targeting the local server:
-   ```bash
-   chrome --kiosk http://localhost:3000
-   ```
-
----
-
-## 📁 Project Directory Structure
+## Architecture and design decisions
 
 ```text
-├── data/              # Storage directory for active overlay frame (frame.png)
-├── public/            # Static assets, UI styling, dynamic frame assets
-├── sessions/          # Auto-generated guest session folders & emails.csv
-├── .env.example       # Environment configuration template
-├── README.md          # Project documentation
-├── package.json       # Project dependencies and scripts
-└── server.js          # Main Express server, API routing & background queue
+Browser (kiosk)                         Node/Express server
+┌──────────────────────┐   POST /api/session   ┌──────────────────────────┐
+│ webcam → capture     │ ────────────────────▶ │ decode base64 → sessions/│
+│ compose strip        │                       │ write session.json       │
+│ (frame from /frame)  │ ◀──────────────────── │ append to emails.csv     │
+└──────────────────────┘      { ok }           └────────────┬─────────────┘
+                                                            │ every 30 s
+                                                  ┌─────────▼─────────┐
+                                                  │ flush(): send via │
+                                                  │ SMTP, retry later │
+                                                  └───────────────────┘
 ```
 
----
+- **Disk first, network second.** Writing to disk before emailing means a network failure can't lose a guest's photos.
+- **Background retry loop.** A `setInterval` worker (`flush()`) is separate from the request path, so slow or failed email never blocks the kiosk.
+- **Plain files instead of a database.** One machine and one event don't need a DB, and the output is easy to inspect or copy off the laptop.
+- **Base64 over JSON.** Images travel as base64 and are decoded with `Buffer`. This keeps the API simple, with the request body limit raised to handle photo sizes.
+- **Frame is a replaceable file.** `/frame.png` serves your uploaded frame, or falls back to a default.
 
-## 💡 Technical Highlights
+## Quickstart
 
-* **Network Resilience:** Uses an isolated `flush()` background worker tied to a recurring `setInterval` loop to prevent network drops from impacting the guest experience.
-* **Base64 Processing:** Encodes camera raw frames on the client side and decodes them via Node.js `Buffer` utilities for filesystem operations.
+**Requirements:** Node.js **20.6 or newer** (the start script uses `--env-file`), and Chrome.
+
+```bash
+git clone https://github.com/athensofgreece/event-photobooth.git
+cd event-photobooth
+npm install
+cp .env.example .env     # then fill in your SMTP details
+npm start
+```
+
+Open `http://localhost:3000`. For a real event, run Chrome full-screen:
+
+```bash
+chrome --kiosk http://localhost:3000
+```
+
+Without SMTP settings the app still runs. It just logs that email is not configured.
+
+### Configuration (`.env`)
+
+| Variable | Example | Purpose |
+| --- | --- | --- |
+| `SMTP_HOST` | `smtp.gmail.com` | Mail server |
+| `SMTP_PORT` | `587` | Mail port |
+| `SMTP_USER` | `yourbooth@gmail.com` | Sender login |
+| `SMTP_PASS` | `your-app-password` | Gmail needs an app password with 2-Step Verification on |
+| `MAIL_FROM` | `"Our Photobooth <yourbooth@gmail.com>"` | From line |
+| `MAIL_SUBJECT` | `Your photobooth pictures!` | Subject line |
+
+## Project structure
+
+```text
+├── server.js        # Express server, API routes, background email queue
+├── public/          # Kiosk UI, fonts, default frame
+├── data/            # Active overlay frame (frame.png)
+├── sessions/        # Created at runtime: guest folders and emails.csv
+├── .env.example     # Config template
+└── package.json
+```
+
+## Known limitations
+
+- Designed for one trusted kiosk on a local machine. The API has no authentication, so don't expose it to the internet.
+- Port 3000 is fixed in code. **[VERIFY / consider `process.env.PORT`]**
+- No automated tests yet.
+
+## Roadmap
+
+- [ ] Add `PORT` and email-retry limits to `.env`
+- [ ] Add tests for the email queue's retry behavior
+- [ ] Split `server.js` into routes, queue, and storage modules
+- [ ] Optional print or QR-code download for guests
+
+## License
+
+MIT
