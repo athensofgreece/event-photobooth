@@ -188,7 +188,7 @@
   applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,subtitleInput.value.trim(),dateInput.value.trim(),locationInput.value.trim(),true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
   window.getAdaptiveEmailTheme=()=>pending||JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');
-  window.getAdaptiveEmailEvent=()=>({title:document.body.dataset.eventTitle||'',date:document.body.dataset.eventDate||'',location:document.body.dataset.eventLocation||'',message:MESSAGE||''});
+  window.getAdaptiveEmailEvent=()=>({title:document.body.dataset.eventTitle||'',date:document.body.dataset.eventDate||'',location:document.body.dataset.eventLocation||''});
   try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';subtitleInput.value=branding.subtitle||'';dateInput.value=branding.date||'';locationInput.value=branding.location||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,branding.subtitle||'',branding.date||'',branding.location||'',false);}}
   catch(e){localStorage.removeItem('adaptivePhotoboothTheme');}
 })();
