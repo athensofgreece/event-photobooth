@@ -235,11 +235,11 @@ async function finish(email) {
   try {
     const response = await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots, theme: window.getAdaptiveEmailTheme ? window.getAdaptiveEmailTheme() : null, event: window.getAdaptiveEmailEvent ? window.getAdaptiveEmailEvent() : null }) });
     const result = await response.json().catch(() => null);
-    if (!response.ok || !result || !result.ok) throw new Error(result?.error || 'Save failed');
+    if (!response.ok || !result || !result.ok) throw new Error(`HTTP ${response.status}: ${result?.error || response.statusText || 'Save failed'}`);
     $('saveStatus').textContent = ''; $('thanksMsg').textContent = email ? 'Your photos are saved! Your email will arrive shortly.' : 'Your photos are saved. Thanks for stopping by!';
     show('thanks'); await sleep(5000); show('idle');
   } catch (err) {
-    $('saveStatus').textContent = 'Your photos could not be saved. Please try again or tell the host.';
+    $('saveStatus').textContent = `Save failed: ${(err?.message || 'Unknown error').slice(0, 180)}. Please try again or tell the host.`;
     console.error('Photobooth save error:', err);
     show('review');
   } finally {
