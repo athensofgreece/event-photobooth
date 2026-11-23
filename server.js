@@ -72,7 +72,7 @@ async function flush() {
     const j = JSON.parse(fs.readFileSync(f)); if (j.status !== 'pending') continue;
     try {
       await tx.sendMail({ from: e.MAIL_FROM, to: j.email, subject: e.MAIL_SUBJECT || 'Your photobooth pictures!',
-        text: MESSAGE + '\n\nJeremiah 31:3 | Oct 24, 2PM | CCF Angono, Level 3, SM Center Angono', html: mailHtml,
+        text: MESSAGE + '\n\nJeremiah 31:3 | Oct 24, 2PM | CCF Angono, Level 3, SM Center Angono', html: buildMailHtml(j.theme || {}, j.event || {}),
         attachments: [
           { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },
           { filename: 'banner.png', path: path.join(P, 'img', 'banner.png'), cid: 'banner' }] });
