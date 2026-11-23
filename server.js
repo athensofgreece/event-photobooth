@@ -24,13 +24,32 @@ const tx = e.SMTP_HOST && nodemailer.createTransport({ host: e.SMTP_HOST, port: 
 app.post('/api/frame', (q, r) => { try { fs.writeFileSync(path.join(D, 'frame.png'), b64(q.body.data)); r.json({ ok: 1 }); } catch (err) { r.status(500).json({ error: err.message }); } });
 
 app.post('/api/session', (q, r) => {
-  const { email, final, shots } = q.body, id = new Date().toISOString().replace(/[:.]/g, '-'), d = path.join(S, id);
-  fs.mkdirSync(d);
-  shots.forEach((s, i) => fs.writeFileSync(path.join(d, `shot${i + 1}.jpg`), b64(s)));
-  fs.writeFileSync(path.join(d, 'final.jpg'), b64(final));
-  fs.writeFileSync(path.join(d, 'session.json'), JSON.stringify({ email, status: email ? 'pending' : 'no-email', tries: 0 }));
-  if (email) fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${email}\n`);
-  r.json({ ok: 1 }); flush();
+  const { email, final, shots } = q.body || {};
+  if (!Array.isArray(shots) || shots.length < 1 || typeof final !== 'string' || !final.startsWith('data:image/')) {
+    return r.status(400).json({ ok: 0, error: 'Missing photo data.' });
+  }
+  const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2, 8);
+  const temp = path.join(S, id + '.tmp'), d = path.join(S, id);
+  try {
+    fs.mkdirSync(temp);
+    shots.forEach((s, i) => {
+      if (typeof s !== 'string' || !s.startsWith('data:image/')) throw new Error('Invalid photo ' + (i + 1));
+      fs.writeFileSync(path.join(temp, `shot${i + 1}.jpg`), b64(s));
+    });
+    fs.writeFileSync(path.join(temp, 'final.jpg'), b64(final));
+    fs.writeFileSync(path.join(temp, 'session.json'), JSON.stringify({ email, status: email ? 'pending' : 'no-email', tries: 0 }));
+    fs.renameSync(temp, d); // Publish only after every image has been written.
+    if (email) {
+      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${email}\n`); }
+      catch (csvErr) { console.warn('Photo session saved; email log could not be updated:', csvErr.message); }
+    }
+    r.json({ ok: 1, id });
+    flush();
+  } catch (err) {
+    try { if (fs.existsSync(temp)) fs.rmSync(temp, { recursive: true, force: true }); } catch {}
+    console.error('Photo session save failed:', err);
+    r.status(500).json({ ok: 0, error: 'Could not save this photo session.' });
+  }
 });
 
 // Email queue: photos are saved first; unsent emails retry every 30s (handles bad venue Wi-Fi).
