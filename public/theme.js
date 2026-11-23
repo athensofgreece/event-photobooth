@@ -38,7 +38,7 @@
     body[data-adaptive-theme="on"] .how li b{color:var(--theme-text)!important}
     body[data-adaptive-theme="on"] .script,body[data-adaptive-theme="on"] .love{color:var(--theme-text)!important;text-shadow:0 0 24px var(--theme-glow)!important}
     body[data-adaptive-theme="on"] #shotLbl{color:var(--theme-text)!important}
-    body[data-adaptive-theme="on"] #count{color:#fff!important}
+    body[data-adaptive-theme="on"] #shotLbl,body[data-adaptive-theme="on"] #count{color:#fff!important}
     body[data-adaptive-theme="on"] .thx{color:var(--theme-text)!important}
     body[data-adaptive-theme="on"] .foot,body[data-adaptive-theme="on"] .verse{color:var(--theme-text)!important}
     body[data-adaptive-theme="on"] p,body[data-adaptive-theme="on"] small{color:var(--theme-muted)!important}
