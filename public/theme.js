@@ -63,33 +63,33 @@
   const lum = c => { const a=c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4); return .2126*a[0]+.7152*a[1]+.0722*a[2]; };
   const mix = (a,b,t) => a.map((v,i)=>v+(b[i]-v)*t);
   function extractPalette(img){
-    const c=document.createElement('canvas'), max=120; c.width=max; c.height=Math.max(1,Math.round(img.height*max/img.width));
-    const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(img,0,0,c.width,c.height);
-    const data=g.getImageData(0,0,c.width,c.height).data, bins=new Map();
-    for(let i=0;i<data.length;i+=16){
-      const r=data[i],gg=data[i+1],b=data[i+2],a=data[i+3]; if(a<150)continue;
-      if(Math.max(r,gg,b)-Math.min(r,gg,b)<16)continue;
-      const key=[r,gg,b].map(v=>Math.floor(v/32)*32+16).join(',');
-      const item=bins.get(key)||{r:0,g:0,b:0,n:0,s:0};
-      item.r+=r;item.g+=gg;item.b+=b;item.n++;item.s+=Math.max(r,gg,b)-Math.min(r,gg,b);bins.set(key,item);
+    const canvas=document.createElement('canvas'),max=160;
+    canvas.width=max;canvas.height=Math.max(1,Math.round(img.height*max/img.width));
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,bins=new Map();
+    // Sample aligned RGBA pixels and include neutrals (cream, white, gray, black) in the palette.
+    for(let i=0;i<data.length;i+=32){
+      const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];if(a<160)continue;
+      const key=[r,g,b].map(v=>Math.floor(v/24)*24+12).join(',');
+      const item=bins.get(key)||{r:0,g:0,b:0,n:0};item.r+=r;item.g+=g;item.b+=b;item.n++;bins.set(key,item);
     }
-    const list=[...bins.values()].map(v=>[v.r/v.n,v.g/v.n,v.b/v.n]).sort((a,b)=>0);
-    if(!list.length)return ['#2c0e10','#fff1ea','#d63c30','#ff9d8a'];
-    const ranked=[...bins.values()].map(v=>({c:[v.r/v.n,v.g/v.n,v.b/v.n],n:v.n,s:v.s/v.n})).sort((a,b)=>b.n-a.n);
-    const accent=ranked.filter(v=>v.s>45).sort((a,b)=>b.s-a.s)[0]?.c||ranked[0].c;
-    const other=ranked.filter(v=>v.c!==accent).slice(0,4).map(v=>v.c);
-    return [accent,...other];
+    const ranked=[...bins.values()].map(v=>({c:[v.r/v.n,v.g/v.n,v.b/v.n],n:v.n})).sort((a,b)=>b.n-a.n);
+    if(!ranked.length)return [[44,14,16],[255,241,234],[214,60,48],[255,157,138]];
+    // Keep most frequent poster colors, weighted by occurrence, not saturation.
+    const palette=ranked.slice(0,6).map(v=>v.c);
+    return palette;
   }
   function buildTheme(palette){
-    const colors=palette.map(rgb), avg=colors.reduce((s,c)=>s+lum(c),0)/colors.length;
-    const dark=avg>.56, accent=colors[0].map(v=>clamp(v,35,235));
-    const sorted=[...colors].sort((a,b)=>lum(a)-lum(b)), posterDark=sorted[0], posterLight=sorted[sorted.length-1];
-    const neutralDark=[24,22,25], neutralLight=[247,244,238];
-    const base=dark?mix(neutralDark,posterDark,.48):mix(neutralLight,posterLight,.48);
-    const text=dark?neutralLight:neutralDark, button=accent.map(v=>clamp(v+(dark?0:28),0,255));
-    const highlight=colors[1]||mix(accent,[255,255,255],.25);
-    const bg=mix(base,accent,.62), panel=mix(bg,highlight,.52);
-    return {ink:hex(bg),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(button),buttonText:hex(dark?[20,20,22]:[255,255,255]),panel:hex(panel),muted:hex(mix(text,bg,.38)),glow:hex(mix(accent,bg,.58)),dark};
+    const colors=palette,average=colors.reduce((s,c)=>s+lum(c),0)/Math.max(1,colors.length),dark=average>.5;
+    const posterDark=[...colors].sort((a,b)=>lum(a)-lum(b))[0],posterLight=[...colors].sort((a,b)=>lum(b)-lum(a))[0];
+    // Choose the most chromatic sampled color for accents, but retain the dominant neutral for the background.
+    const chromatic=[...colors].sort((a,b)=>(Math.max(...b)-Math.min(...b))-(Math.max(...a)-Math.min(...a)));
+    const accent=chromatic[0],highlight=chromatic[1]||posterLight;
+    const background=dark?mix(posterDark,[22,20,24],.18):mix(posterLight,[255,250,245],.12);
+    const panel=dark?mix(posterDark,posterLight,.22):mix(posterLight,posterDark,.14);
+    const text=lum(background)>.5?[28,25,29]:[255,250,245];
+    const buttonText=lum(accent)>.52?[25,22,25]:[255,255,255];
+    return {ink:hex(background),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(accent),buttonText:hex(buttonText),panel:hex(panel),muted:hex(mix(text,background,.28)),glow:hex(mix(accent,background,.48)),dark:lum(background)>.5};
   }
   function renderSwatches(t){
     swatches.innerHTML='';
