@@ -36,7 +36,6 @@
     body[data-adaptive-theme="on"] .how{background:var(--theme-panel)!important;border-color:var(--theme-border)!important}
     body[data-adaptive-theme="on"] #idle button,body[data-adaptive-theme="on"] #review button,body[data-adaptive-theme="on"] #thanks button{background:var(--theme-button)!important;color:var(--theme-button-text)!important;box-shadow:0 0 28px var(--theme-glow)!important}
     body[data-adaptive-theme="on"] #idle button.ghost,body[data-adaptive-theme="on"] #review button.ghost,body[data-adaptive-theme="on"] #thanks button.ghost{background:transparent!important;color:var(--theme-text)!important;border-color:var(--theme-text)!important;box-shadow:none!important}
-    body[data-adaptive-theme="on"] #gear{background:var(--theme-panel)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
     body[data-adaptive-theme="on"] #result{border-color:var(--theme-accent)!important}
     body[data-adaptive-theme="on"] #strip{border-color:var(--theme-accent)!important}
     body[data-adaptive-theme="on"] #dots i{border-color:var(--theme-accent)!important}
@@ -49,7 +48,7 @@
     body[data-adaptive-theme="on"] #shotLbl,body[data-adaptive-theme="on"] #count{color:#fff!important}
     body[data-adaptive-theme="on"] .thx{color:var(--theme-text)!important}
     body[data-adaptive-theme="on"] .foot,body[data-adaptive-theme="on"] .verse{color:var(--theme-text)!important}
-    body[data-adaptive-theme="on"] p,body[data-adaptive-theme="on"] small{color:var(--theme-muted)!important}
+    body[data-adaptive-theme="on"] #idle p,body[data-adaptive-theme="on"] #idle small,body[data-adaptive-theme="on"] #review p,body[data-adaptive-theme="on"] #review small,body[data-adaptive-theme="on"] #thanks p,body[data-adaptive-theme="on"] #thanks small{color:var(--theme-muted)!important}
   `;
   document.head.appendChild(style);
   const input = document.getElementById('themeImage');
