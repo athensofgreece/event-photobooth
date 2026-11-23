@@ -88,7 +88,7 @@
     const base=dark?mix(neutralDark,posterDark,.48):mix(neutralLight,posterLight,.48);
     const text=dark?neutralLight:neutralDark, button=accent.map(v=>clamp(v+(dark?0:28),0,255));
     const highlight=colors[1]||mix(accent,[255,255,255],.25);
-    const bg=mix(base,accent,.32), panel=mix(bg,highlight,.35);
+    const bg=mix(base,accent,.62), panel=mix(bg,highlight,.52);
     return {ink:hex(bg),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(button),buttonText:hex(dark?[20,20,22]:[255,255,255]),panel:hex(panel),muted:hex(mix(text,bg,.38)),glow:hex(mix(accent,bg,.58)),dark};
   }
   function renderSwatches(t){
@@ -117,12 +117,13 @@
   }
   function fitEventTitle(){
     const node=titleEl?.querySelector('.eventCustomTitle');if(!node)return;
-    const text=node.textContent||'',box=titleEl.parentElement,available=Math.max(120,(box?.clientWidth||innerWidth*.45)-12);
-    const maxSize=Math.min(innerHeight*.16,innerWidth*.16,150),minSize=24;
-    const measure=document.createElement('canvas').getContext('2d');
-    measure.font='400 '+maxSize+'px "Instrument Serif"';
-    const measured=Math.max(1,measure.measureText(text).width),size=clamp(maxSize*available/measured,minSize,maxSize);
-    titleEl.style.width=available+'px';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.maxWidth=available+'px';node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
+    const text=(node.textContent||'').trim(),box=titleEl.parentElement,available=Math.max(140,(box?.clientWidth||innerWidth*.45)-12);
+    const maxSize=Math.min(innerHeight*.18,innerWidth*.16,164),minSize=32,lineHeight=1.08,maxHeight=Math.min(innerHeight*.38,(box?.clientHeight||innerHeight*.65)*.62);
+    const ctx=document.createElement('canvas').getContext('2d');
+    function countLines(size){ctx.font='400 '+size+'px "Instrument Serif"';let lines=1,line='';for(const word of text.split(/\\s+/)){const test=line?line+' '+word:word;if(line&&ctx.measureText(test).width>available){lines++;line=word;}else line=test;}return lines;}
+    let size=maxSize,lines=countLines(size);
+    while(size>minSize&&(lines*size*lineHeight>maxHeight)){size-=2;lines=countLines(size);}
+    titleEl.style.width=available+'px';node.style.width='100%';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.lineHeight=lineHeight;node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
   }
   function applyBranding(title,logo,persist=false){
     if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;node.style.fontSize='clamp(24px,12vw,150px)';fitEventTitle();}else titleEl.innerHTML=originalTitle;}
