@@ -230,11 +230,20 @@ async function session() {
 async function finish(email) {
   if (testMode) { testMode = false; show('idle'); return; }
   $('send').disabled = $('skip').disabled = true;
+  $('thanksMsg').textContent = 'Saving your photos…';
   try {
-    await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots }) });
-    $('thanksMsg').textContent = email ? 'Your photos are on their way to your inbox.' : 'Thanks for stopping by!';
-  } catch { $('thanksMsg').textContent = 'Something went wrong saving your photos. Please tell the host.'; }
-  show('thanks'); await sleep(5000); $('send').disabled = $('skip').disabled = false; show('idle');
+    const response = await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots }) });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || !result.ok) throw new Error(result?.error || 'Save failed');
+    $('thanksMsg').textContent = email ? 'Your photos are saved! Your email will arrive shortly.' : 'Your photos are saved. Thanks for stopping by!';
+    show('thanks'); await sleep(5000); show('idle');
+  } catch (err) {
+    $('thanksMsg').textContent = 'Your photos could not be saved. Please try again or tell the host.';
+    console.error('Photobooth save error:', err);
+    show('review');
+  } finally {
+    $('send').disabled = $('skip').disabled = false;
+  }
 }
 
 $('go').onclick = () => { ac(); session(); };
