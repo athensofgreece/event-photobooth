@@ -10,6 +10,9 @@
       <input id="themeImage" type="file" accept="image/*">
     </label>
     <img id="themeReference" alt="Theme reference preview" style="display:none;width:100%;max-height:110px;object-fit:contain;background:#fff;border-radius:8px">
+    <label>Event title<input id="themeTitle" type="text" placeholder="Type the event title"></label>
+    <label>Event logo (optional)<input id="themeLogo" type="file" accept="image/*"></label>
+    <img id="themeLogoPreview" alt="Event logo preview" style="display:none;width:100%;max-height:80px;object-fit:contain;background:#fff;border-radius:8px">
     <div id="themeSwatches" style="display:flex;gap:6px"></div>
     <small id="themeStatus">Upload an image to extract its colors and preview a matching booth theme.</small>
     <div style="display:flex;gap:8px">
@@ -22,6 +25,7 @@
     #adaptiveTheme{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid rgba(80,50,40,.25)}
     #adaptiveTheme input[type=file]{font-size:12px;padding:5px}
     #adaptiveTheme button{font-size:13px;padding:8px 10px}
+    .eventCustomTitle{font:400 min(17vh,19vw)/1.05 "Instrument Serif",serif;letter-spacing:.02em;color:#fff;text-shadow:0 0 30px rgba(255,255,255,.4)}
     #admin{max-height:calc(100vh - 76px);overflow:auto}
     body[data-adaptive-theme="on"] #idle{background:var(--theme-idle)!important}
     body[data-adaptive-theme="on"] #review,body[data-adaptive-theme="on"] #thanks{background:var(--theme-screen)!important}
@@ -49,7 +53,10 @@
   const swatches = document.getElementById('themeSwatches');
   const status = document.getElementById('themeStatus');
   const applyBtn = document.getElementById('themeApply');
-  let pending = null, objectUrl = null;
+  const titleInput=document.getElementById('themeTitle'), logoInput=document.getElementById('themeLogo'), logoPreview=document.getElementById('themeLogoPreview');
+  const titleEl=document.querySelector('.title'), brandEl=document.querySelector('.brand'), logosEl=document.querySelectorAll('.logos');
+  const originalTitle=titleEl?titleEl.innerHTML:'', originalBrand=brandEl?brandEl.textContent:'', originalLogos=Array.from(logosEl).map(el=>el.innerHTML);
+  let pending = null, objectUrl = null, pendingLogo = null;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   const rgb = h => { const m = h.match(/[\da-f]{2}/gi); return m ? m.map(x => parseInt(x,16)) : [0,0,0]; };
@@ -104,6 +111,14 @@
     if(typeof CFG!=='undefined') CFG.BG=t.ink;
     if(persist) localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
   }
+  function applyBranding(title,logo,persist=false){
+    if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';titleEl.querySelector('.eventCustomTitle').textContent=title;}else titleEl.innerHTML=originalTitle;}
+    if(brandEl)brandEl.textContent=title?'':originalBrand;
+    document.body.dataset.eventTitle=title||'';
+    if(logo)logosEl.forEach(el=>{el.innerHTML='';const im=document.createElement('img');im.src=logo;im.alt='Event logo';im.style.cssText='max-height:clamp(42px,9vh,100px);max-width:min(70vw,360px);object-fit:contain';el.appendChild(im);});
+    else logosEl.forEach((el,i)=>el.innerHTML=originalLogos[i]||originalLogos[0]||'');
+    if(persist)localStorage.setItem('adaptivePhotoboothBranding',JSON.stringify({title,logo}));
+  }
   function reset(){
     document.body.removeAttribute('data-adaptive-theme');
     ['--theme-accent','--theme-highlight','--theme-button','--theme-button-text','--theme-panel','--theme-text','--theme-muted','--theme-border','--theme-glow','--theme-screen','--theme-idle'].forEach(v=>document.documentElement.style.removeProperty(v));
@@ -111,8 +126,10 @@
     document.documentElement.style.setProperty('--red','#d63c30');document.documentElement.style.setProperty('--rose','#a9524f');
     document.documentElement.style.setProperty('--amber','#ff9d8a');document.documentElement.style.setProperty('--sun','#ff9d8a');document.documentElement.style.setProperty('--mute','rgba(255,241,234,.82)');
     if(typeof CFG!=='undefined')CFG.BG='#2c0e10';
-    localStorage.removeItem('adaptivePhotoboothTheme');pending=null;applyBtn.disabled=true;status.textContent='Original photobooth theme restored.';
+    localStorage.removeItem('adaptivePhotoboothTheme');localStorage.removeItem('adaptivePhotoboothBranding');applyBranding('',null,false);titleInput.value='';logoInput.value='';logoPreview.style.display='none';pendingLogo=null;pending=null;applyBtn.disabled=true;status.textContent='Original photobooth theme restored.';
   }
+  titleInput.addEventListener('input',()=>applyBranding(titleInput.value.trim(),pendingLogo,false));
+  logoInput.addEventListener('change',()=>{const file=logoInput.files&&logoInput.files[0];if(!file)return;if(!file.type.startsWith('image/')){status.textContent='Choose an image file for the logo.';return;}const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{try{const cv=document.createElement('canvas'),s=Math.min(1,700/im.width,300/im.height);cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);pendingLogo=cv.toDataURL('image/png');logoPreview.src=pendingLogo;logoPreview.style.display='block';applyBranding(titleInput.value.trim(),pendingLogo,false);}catch(e){status.textContent='Could not process logo.';}URL.revokeObjectURL(url);};im.onerror=()=>{status.textContent='Could not load logo image.';URL.revokeObjectURL(url);};im.src=url;});
   input.addEventListener('change',()=>{
     const file=input.files&&input.files[0];if(!file)return;
     if(!file.type.startsWith('image/')){status.textContent='Please choose an image file.';return;}
@@ -126,8 +143,8 @@
     img.onerror=()=>status.textContent='Could not load that image.';
     img.src=objectUrl;
   });
-  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);status.textContent='Theme applied and saved on this kiosk.';});
+  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
-  try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}}
+  try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,false);}}
   catch(e){localStorage.removeItem('adaptivePhotoboothTheme');}
 })();
