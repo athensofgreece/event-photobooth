@@ -212,7 +212,7 @@ async function compose() {
     x.save(); x.beginPath(); x.rect(s.x, s.y, s.w, s.h); x.clip(); x.drawImage(p, s.x + (s.w - w) / 2, s.y + (s.h - h) / 2, w, h); x.restore();
   }
   if (frame) x.drawImage(frame, 0, 0, c.width, c.height);
-  else { x.fillStyle = '#fff1ea'; x.textAlign = 'center'; x.font = '78px "Instrument Serif", serif'; x.fillText(document.body.dataset.eventTitle || 'ELEB1G Worship Day', c.width / 2, c.height - 85); x.font = '30px Figtree, sans-serif'; x.fillText('Oct 24, 2PM | CCF Angono, Level 3, SM Center Angono', c.width / 2, c.height - 32); }
+  else { x.fillStyle = '#fff1ea'; x.textAlign = 'center'; x.font = '78px "Instrument Serif", serif'; x.fillText(document.body.dataset.eventTitle || 'ELEB1G Worship Day', c.width / 2, c.height - 85); x.font = '30px Figtree, sans-serif'; x.fillText([document.body.dataset.eventDate || 'Oct 24, 2PM', document.body.dataset.eventLocation || 'CCF Angono, Level 3, SM Center Angono'].filter(Boolean).join(' | '), c.width / 2, c.height - 32); }
   return c.toDataURL('image/jpeg', .9);
 }
 
