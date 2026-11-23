@@ -36,7 +36,10 @@ app.post('/api/frame', (q, r) => { try { fs.writeFileSync(path.join(D, 'frame.pn
 
 app.post('/api/session', (q, r) => {
   const { email, final, shots, theme, event } = q.body || {};
+  const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
+  console.log(`Photo save request: ${payloadBytes} bytes; shots=${Array.isArray(shots) ? shots.length : 'invalid'}; final=${typeof final === 'string' ? final.length : 'missing'} chars`);
   if (!Array.isArray(shots) || shots.length < 1 || typeof final !== 'string' || !final.startsWith('data:image/')) {
+    console.warn('Photo save validation failed: missing/invalid final or shots');
     return r.status(400).json({ ok: 0, error: 'Missing photo data.' });
   }
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2, 8);
@@ -54,12 +57,13 @@ app.post('/api/session', (q, r) => {
       try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${email}\n`); }
       catch (csvErr) { console.warn('Photo session saved; email log could not be updated:', csvErr.message); }
     }
+    console.log(`Photo session saved successfully: ${id} (${shots.length} shots)`);
     r.json({ ok: 1, id });
     flush();
   } catch (err) {
     try { if (fs.existsSync(temp)) fs.rmSync(temp, { recursive: true, force: true }); } catch {}
-    console.error('Photo session save failed:', err);
-    r.status(500).json({ ok: 0, error: 'Could not save this photo session.' });
+    console.error('Photo session save failed:', err.stack || err);
+    r.status(500).json({ ok: 0, error: err.code || err.message || 'Could not save this photo session.' });
   }
 });
 
@@ -92,4 +96,11 @@ if (tx) tx.verify().then(() => {
 }).catch(err => console.log('EMAIL LOGIN PROBLEM:', err.message));
 setInterval(flush, 30000);
 app.get('/api/config', (q, r) => r.json({ email: !!tx }));
+app.use((err, q, r, next) => {
+  if (r.headersSent) return next(err);
+  console.error('Photobooth request error:', err.stack || err);
+  if (err.type === 'entity.too.large' || err.status === 413) return r.status(413).json({ ok: 0, error: 'Upload too large. Request exceeds the 100 MB limit.' });
+  if (err.type === 'entity.parse.failed' || err.status === 400) return r.status(400).json({ ok: 0, error: 'Invalid request JSON.' });
+  r.status(err.status || 500).json({ ok: 0, error: err.message || 'Request failed.' });
+});
 app.listen(3000, () => console.log('Photobooth running: http://localhost:3000' + (tx ? '' : '  (email NOT configured, see .env.example)')));
