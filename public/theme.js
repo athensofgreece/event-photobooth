@@ -112,7 +112,7 @@
     if(persist) localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
   }
   function applyBranding(title,logo,persist=false){
-    if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';titleEl.querySelector('.eventCustomTitle').textContent=title;}else titleEl.innerHTML=originalTitle;}
+    if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;const n=title.length;node.style.fontSize=n<=12?"min(15vh,16vw)":n<=22?"min(11vh,12vw)":n<=35?"min(8vh,9vw)":"min(6vh,7vw)";}else titleEl.innerHTML=originalTitle;}
     if(brandEl)brandEl.textContent=title?'':originalBrand;
     document.body.dataset.eventTitle=title||'';
     if(logo)logosEl.forEach(el=>{el.innerHTML='';const im=document.createElement('img');im.src=logo;im.alt='Event logo';im.style.cssText='max-height:clamp(42px,9vh,100px);max-width:min(70vw,360px);object-fit:contain';el.appendChild(im);});
