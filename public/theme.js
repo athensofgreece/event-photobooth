@@ -11,6 +11,7 @@
     </label>
     <img id="themeReference" alt="Theme reference preview" style="display:none;width:100%;max-height:110px;object-fit:contain;background:#fff;border-radius:8px">
     <label>Event title<input id="themeTitle" type="text" placeholder="Type the event title"></label>
+    <label>Event subtitle / details<input id="themeSubtitle" type="text" placeholder="e.g. ELEB1G Worship Day · October Praise 2026"></label>
     <label>Event logo (optional)<input id="themeLogo" type="file" accept="image/*"></label>
     <img id="themeLogoPreview" alt="Event logo preview" style="display:none;width:100%;max-height:80px;object-fit:contain;background:#fff;border-radius:8px">
     <div id="themeSwatches" style="display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -54,7 +55,7 @@
   const swatches = document.getElementById('themeSwatches');
   const status = document.getElementById('themeStatus');
   const applyBtn = document.getElementById('themeApply');
-  const titleInput=document.getElementById('themeTitle'), logoInput=document.getElementById('themeLogo'), logoPreview=document.getElementById('themeLogoPreview');
+  const titleInput=document.getElementById('themeTitle'), subtitleInput=document.getElementById('themeSubtitle'), logoInput=document.getElementById('themeLogo'), logoPreview=document.getElementById('themeLogoPreview');
   const titleEl=document.querySelector('.title'), brandEl=document.querySelector('.brand'), logosEl=document.querySelectorAll('.logos');
   const originalTitle=titleEl?titleEl.innerHTML:'', originalBrand=brandEl?brandEl.textContent:'', originalLogos=Array.from(logosEl).map(el=>el.innerHTML);
   let pending = null, objectUrl = null, pendingLogo = null, extractedPalette = null;
@@ -138,13 +139,14 @@
     while(size>minSize&&lines*size*lineHeight>maxHeight){size-=2;lines=linesAt(size);}
     titleEl.style.width=available+'px';titleEl.style.maxWidth=available+'px';node.style.display='block';node.style.width='100%';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.lineHeight=lineHeight;node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
   }
-  function applyBranding(title,logo,persist=false){
+  function applyBranding(title,logo,subtitle='',persist=false){
     if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;node.style.fontSize='clamp(24px,12vw,150px)';fitEventTitle();}else titleEl.innerHTML=originalTitle;}
-    if(brandEl)brandEl.textContent=title?'':originalBrand;
+    if(brandEl){brandEl.textContent=subtitle||(title?'':originalBrand);brandEl.style.display=brandEl.textContent?'':'none';brandEl.style.width='100%';brandEl.style.maxWidth='100%';brandEl.style.whiteSpace='normal';brandEl.style.overflowWrap='anywhere';brandEl.style.fontSize=subtitle?'clamp(12px,2.1vh,22px)':'';
+}
     document.body.dataset.eventTitle=title||'';
     if(logo)logosEl.forEach(el=>{el.innerHTML='';const im=document.createElement('img');im.src=logo;im.alt='Event logo';im.style.cssText='max-height:clamp(42px,9vh,100px);max-width:min(70vw,360px);object-fit:contain';el.appendChild(im);});
     else logosEl.forEach((el,i)=>el.innerHTML=originalLogos[i]||originalLogos[0]||'');
-    if(persist)localStorage.setItem('adaptivePhotoboothBranding',JSON.stringify({title,logo}));
+    if(persist)localStorage.setItem('adaptivePhotoboothBranding',JSON.stringify({title,logo,subtitle}));
   }
   window.addEventListener('resize',fitEventTitle);
   function reset(){
@@ -154,10 +156,11 @@
     document.documentElement.style.setProperty('--red','#d63c30');document.documentElement.style.setProperty('--rose','#a9524f');
     document.documentElement.style.setProperty('--amber','#ff9d8a');document.documentElement.style.setProperty('--sun','#ff9d8a');document.documentElement.style.setProperty('--mute','rgba(255,241,234,.82)');
     if(typeof CFG!=='undefined')CFG.BG='#2c0e10';
-    localStorage.removeItem('adaptivePhotoboothTheme');localStorage.removeItem('adaptivePhotoboothBranding');applyBranding('',null,false);titleInput.value='';logoInput.value='';logoPreview.style.display='none';pendingLogo=null;pending=null;extractedPalette=null;applyBtn.disabled=true;document.getElementById('themeShuffle').disabled=true;status.textContent='Original photobooth theme restored.';
+    localStorage.removeItem('adaptivePhotoboothTheme');localStorage.removeItem('adaptivePhotoboothBranding');applyBranding('',null,'',false);titleInput.value='';subtitleInput.value='';logoInput.value='';logoPreview.style.display='none';pendingLogo=null;pending=null;extractedPalette=null;applyBtn.disabled=true;document.getElementById('themeShuffle').disabled=true;status.textContent='Original photobooth theme restored.';
   }
-  titleInput.addEventListener('input',()=>applyBranding(titleInput.value.trim(),pendingLogo,false));
-  logoInput.addEventListener('change',()=>{const file=logoInput.files&&logoInput.files[0];if(!file)return;if(!file.type.startsWith('image/')){status.textContent='Choose an image file for the logo.';return;}const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{try{const cv=document.createElement('canvas'),s=Math.min(1,700/im.width,300/im.height);cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);pendingLogo=cv.toDataURL('image/png');logoPreview.src=pendingLogo;logoPreview.style.display='block';applyBranding(titleInput.value.trim(),pendingLogo,false);}catch(e){status.textContent='Could not process logo.';}URL.revokeObjectURL(url);};im.onerror=()=>{status.textContent='Could not load logo image.';URL.revokeObjectURL(url);};im.src=url;});
+  titleInput.addEventListener('input',()=>applyBranding(titleInput.value.trim(),pendingLogo,subtitleInput.value.trim(),false));
+  subtitleInput.addEventListener('input',()=>applyBranding(titleInput.value.trim(),pendingLogo,subtitleInput.value.trim(),false));
+  logoInput.addEventListener('change',()=>{const file=logoInput.files&&logoInput.files[0];if(!file)return;if(!file.type.startsWith('image/')){status.textContent='Choose an image file for the logo.';return;}const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{try{const cv=document.createElement('canvas'),s=Math.min(1,700/im.width,300/im.height);cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);pendingLogo=cv.toDataURL('image/png');logoPreview.src=pendingLogo;logoPreview.style.display='block';applyBranding(titleInput.value.trim(),pendingLogo,subtitleInput.value.trim(),false);}catch(e){status.textContent='Could not process logo.';}URL.revokeObjectURL(url);};im.onerror=()=>{status.textContent='Could not load logo image.';URL.revokeObjectURL(url);};im.src=url;});
   input.addEventListener('change',()=>{
     const file=input.files&&input.files[0];if(!file)return;
     if(!file.type.startsWith('image/')){status.textContent='Please choose an image file.';return;}
@@ -172,8 +175,8 @@
     img.src=objectUrl;
   });
   document.getElementById('themeShuffle').addEventListener('click',()=>{if(!extractedPalette||extractedPalette.length<2)return;pending=buildTheme(extractedPalette,true);renderSwatches(pending);apply(pending,false);status.textContent='New color combination previewed. Shuffle again or Apply theme to save.';});
-  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
+  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,subtitleInput.value.trim(),true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
-  try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,false);}}
+  try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';subtitleInput.value=branding.subtitle||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,branding.subtitle||'',false);}}
   catch(e){localStorage.removeItem('adaptivePhotoboothTheme');}
 })();
