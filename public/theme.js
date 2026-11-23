@@ -29,6 +29,11 @@
     #adaptiveTheme{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid rgba(80,50,40,.25)}
     #adaptiveTheme input[type=file]{font-size:12px;padding:5px}
     #adaptiveTheme button{font-size:13px;padding:8px 10px}
+    /* Settings panel stays on its original, non-adaptive appearance */
+    #admin{background:var(--cream)!important;color:var(--ink)!important}
+    #admin button{background:var(--ink)!important;color:var(--cream)!important;box-shadow:none!important;border-color:transparent!important}
+    #admin input,#admin select{background:#fff!important;color:#222!important;border:1px solid #ccc!important}
+    #admin label,#admin small,#admin span,#admin b{color:var(--ink)!important}
     .eventCustomTitle{display:block;width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere;font-family:"Instrument Serif",serif;font-weight:400;line-height:1.08;letter-spacing:.015em;text-shadow:0 0 18px var(--theme-glow,transparent)}
     #admin{max-height:calc(100vh - 76px);overflow:auto}
     body[data-adaptive-theme="on"] #idle{background:var(--theme-idle)!important}
