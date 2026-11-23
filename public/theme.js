@@ -88,7 +88,7 @@
     const base=dark?mix(neutralDark,posterDark,.48):mix(neutralLight,posterLight,.48);
     const text=dark?neutralLight:neutralDark, button=accent.map(v=>clamp(v+(dark?0:28),0,255));
     const highlight=colors[1]||mix(accent,[255,255,255],.25);
-    const bg=mix(base,accent,.22), panel=mix(bg,highlight,.24);
+    const bg=mix(base,accent,.32), panel=mix(bg,highlight,.35);
     return {ink:hex(bg),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(button),buttonText:hex(dark?[20,20,22]:[255,255,255]),panel:hex(panel),muted:hex(mix(text,bg,.38)),glow:hex(mix(accent,bg,.58)),dark};
   }
   function renderSwatches(t){
@@ -122,7 +122,7 @@
     const measure=document.createElement('canvas').getContext('2d');
     measure.font='400 '+maxSize+'px "Instrument Serif"';
     const measured=Math.max(1,measure.measureText(text).width),size=clamp(maxSize*available/measured,minSize,maxSize);
-    node.style.fontSize=size+'px';node.style.maxWidth=available+'px';node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
+    titleEl.style.width=available+'px';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.maxWidth=available+'px';node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
   }
   function applyBranding(title,logo,persist=false){
     if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;node.style.fontSize='clamp(24px,12vw,150px)';fitEventTitle();}else titleEl.innerHTML=originalTitle;}
