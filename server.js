@@ -9,7 +9,7 @@ const b64 = d => Buffer.from(d.split(',')[1], 'base64');
 const e = process.env;
 
 // ---- EDIT YOUR EMAIL MESSAGE HERE ----
-const MESSAGE = 'Thank you for celebrating ELEB1G Worship Day with us! Your photo strip is below, and attached so you can save it and share it.';
+const MESSAGE = 'Thank you for celebrating B1G Christmas Party 2026 with us! Your photo strip is below, and attached so you can save it and share it.';
 function safeColor(value, fallback) { return /^#[0-9a-fA-F]{6}$/.test(value || '') ? value : fallback; }
 function escapeHtml(value) { return String(value || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function buildMailHtml(theme = {}, event = {}) {
@@ -18,7 +18,7 @@ function buildMailHtml(theme = {}, event = {}) {
   const border = safeColor(theme.accent, '#f4e8dd'), title = escapeHtml(event.title || 'Your photobooth pictures!');
   const details = [event.date, event.location].filter(Boolean).map(escapeHtml).join(' | ');
   const message = escapeHtml(event.message || MESSAGE);
-  const verse = escapeHtml(event.verse || '“I have loved thee with an everlasting love.” Jeremiah 31:3');
+  const verse = escapeHtml(event.verse || '“The true light that gives light to everyone was coming into the world.” John 1:9');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"></head><body style="margin:0;padding:0;background:${bg};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${bg}" style="background:${bg};"><tr><td align="center" style="padding:28px 12px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="${panel}" style="max-width:560px;width:100%;background:${panel};border:1px solid ${border};border-radius:18px;overflow:hidden;">
@@ -76,7 +76,7 @@ async function flush() {
     const j = JSON.parse(fs.readFileSync(f)); if (j.status !== 'pending') continue;
     try {
       await tx.sendMail({ from: e.MAIL_FROM, to: j.email, subject: e.MAIL_SUBJECT || 'Your photobooth pictures!',
-        text: MESSAGE + (j.event?.date || j.event?.location ? '\n\n' + [j.event.date, j.event.location].filter(Boolean).join(' | ') : '\n\nJeremiah 31:3'), html: buildMailHtml(j.theme || {}, j.event || {}),
+        text: MESSAGE + (j.event?.date || j.event?.location ? '\n\n' + [j.event.date, j.event.location].filter(Boolean).join(' | ') : '\n\nJohn 1:9'), html: buildMailHtml(j.theme || {}, j.event || {}),
         attachments: [
           { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },
           { filename: 'banner.png', path: path.join(P, 'img', 'banner.png'), cid: 'banner' }] });
