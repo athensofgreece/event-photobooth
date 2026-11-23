@@ -1,8 +1,31 @@
 const express = require('express'), fs = require('fs'), path = require('path'), nodemailer = require('nodemailer');
 const app = express(), S = path.join(__dirname, 'sessions'), P = path.join(__dirname, 'public');
 fs.mkdirSync(S, { recursive: true });
+// Basic security headers. This booth is intended for trusted local-network use.
+app.use((q, r, next) => {
+  r.setHeader('X-Content-Type-Options', 'nosniff');
+  r.setHeader('X-Frame-Options', 'DENY');
+  r.setHeader('Referrer-Policy', 'no-referrer');
+  r.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  r.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  next();
+});
+const requestLimits = new Map();
+function rateLimit(key, max, windowMs) {
+  return (q, r, next) => {
+    const now = Date.now(), entry = requestLimits.get(key + (q.ip || q.socket.remoteAddress));
+    if (!entry || now - entry.start >= windowMs) {
+      requestLimits.set(key + (q.ip || q.socket.remoteAddress), { start: now, count: 1 });
+      return next();
+    }
+    if (entry.count >= max) return r.status(429).json({ ok: 0, error: 'Too many requests. Please wait and try again.' });
+    entry.count++;
+    next();
+  };
+}
 app.use(express.json({ limit: '100mb' }));
 const D = path.join(__dirname, 'data'); fs.mkdirSync(D, { recursive: true });
+
 app.get('/frame.png', (q, r) => { const f = path.join(D, 'frame.png'), d0 = path.join(P, 'img', 'default-frame.png'); fs.existsSync(f) ? r.sendFile(f) : fs.existsSync(d0) ? r.sendFile(d0) : r.sendStatus(404); });
 app.use(express.static(P));
 const b64 = d => Buffer.from(d.split(',')[1], 'base64');
@@ -31,22 +54,30 @@ ${details ? `<tr><td align="center" style="font-family:Arial,Helvetica,sans-seri
 }
 const tx = e.SMTP_HOST && nodemailer.createTransport({ host: e.SMTP_HOST, port: +e.SMTP_PORT || 587, auth: { user: e.SMTP_USER, pass: e.SMTP_PASS } });
 
-app.post('/api/frame', (q, r) => { try { fs.writeFileSync(path.join(D, 'frame.png'), b64(q.body.data)); r.json({ ok: 1 }); } catch (err) { r.status(500).json({ error: err.message }); } });
+app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
+  const data = q.body?.data;
+  if (typeof data !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 8 * 1024 * 1024) {
+    return r.status(400).json({ ok: 0, error: 'Invalid PNG frame or file is too large (8 MB maximum).' });
+  }
+  try { fs.writeFileSync(path.join(D, 'frame.png'), b64(data)); r.json({ ok: 1 }); }
+  catch (err) { console.error('Frame upload failed:', err); r.status(500).json({ ok: 0, error: 'Could not save the frame.' }); }
+});
 
-app.post('/api/session', (q, r) => {
+app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   const { email, final, shots, theme, event } = q.body || {};
   const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
   console.log(`Photo save request: ${payloadBytes} bytes; shots=${Array.isArray(shots) ? shots.length : 'invalid'}; final=${typeof final === 'string' ? final.length : 'missing'} chars`);
-  if (!Array.isArray(shots) || shots.length < 1 || typeof final !== 'string' || !final.startsWith('data:image/')) {
-    console.warn('Photo save validation failed: missing/invalid final or shots');
-    return r.status(400).json({ ok: 0, error: 'Missing photo data.' });
+  const imagePattern = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+  const validImage = (value, maxBytes = 12 * 1024 * 1024) => typeof value === 'string' && imagePattern.test(value) && Buffer.byteLength(value, 'utf8') <= maxBytes && b64(value).length <= maxBytes;
+  if (!Array.isArray(shots) || shots.length !== 4 || !validImage(final) || shots.some(s => !validImage(s))) {
+    console.warn('Photo save validation failed: image data missing, invalid, too large, or shot count is not four');
+    return r.status(400).json({ ok: 0, error: 'Invalid photo data. Four images and a final strip are required; each must be under 12 MB.' });
   }
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2, 8);
   const temp = path.join(S, id + '.tmp'), d = path.join(S, id);
   try {
     fs.mkdirSync(temp);
     shots.forEach((s, i) => {
-      if (typeof s !== 'string' || !s.startsWith('data:image/')) throw new Error('Invalid photo ' + (i + 1));
       fs.writeFileSync(path.join(temp, `shot${i + 1}.jpg`), b64(s));
     });
     fs.writeFileSync(path.join(temp, 'final.jpg'), b64(final));
