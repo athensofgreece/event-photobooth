@@ -108,6 +108,7 @@ body.busy #gear,body.busy #admin{display:none!important}
 <section class="s" id="review"><img id="result" alt="Your photo strip">
  <div id="emailBox"><input id="email" type="email" placeholder="you@email.com" autocomplete="email">
  <small>We'll email your photos and keep a copy of them. Skip if you'd rather not share your email.</small></div>
+ <small id="saveStatus" role="status"></small>
  <div class="row"><button class="ghost" id="retake">Retake</button><button id="send">Email my photos</button><button class="ghost" id="skip">No thanks</button></div></section>
 <section class="s" id="thanks"><div class="logos"><img src="img/elevate.png" alt="Elevate Angono"><img src="img/b1g.png" alt="B1G Angono"></div><h1 class="thx">Thank you</h1><p id="thanksMsg"></p><div class="verse">“I have loved thee with an everlasting love.” Jeremiah 31:3</div></section>
 
@@ -230,15 +231,15 @@ async function session() {
 async function finish(email) {
   if (testMode) { testMode = false; show('idle'); return; }
   $('send').disabled = $('skip').disabled = true;
-  $('thanksMsg').textContent = 'Saving your photos…';
+  $('saveStatus').textContent = 'Saving your photos…';
   try {
     const response = await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots }) });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.ok) throw new Error(result?.error || 'Save failed');
-    $('thanksMsg').textContent = email ? 'Your photos are saved! Your email will arrive shortly.' : 'Your photos are saved. Thanks for stopping by!';
+    $('saveStatus').textContent = ''; $('thanksMsg').textContent = email ? 'Your photos are saved! Your email will arrive shortly.' : 'Your photos are saved. Thanks for stopping by!';
     show('thanks'); await sleep(5000); show('idle');
   } catch (err) {
-    $('thanksMsg').textContent = 'Your photos could not be saved. Please try again or tell the host.';
+    $('saveStatus').textContent = 'Your photos could not be saved. Please try again or tell the host.';
     console.error('Photobooth save error:', err);
     show('review');
   } finally {
