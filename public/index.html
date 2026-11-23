@@ -233,7 +233,7 @@ async function finish(email) {
   $('send').disabled = $('skip').disabled = true;
   $('saveStatus').textContent = 'Saving your photos…';
   try {
-    const response = await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots }) });
+    const response = await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, final, shots, theme: window.getAdaptiveEmailTheme ? window.getAdaptiveEmailTheme() : null, event: window.getAdaptiveEmailEvent ? window.getAdaptiveEmailEvent() : null }) });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || !result.ok) throw new Error(result?.error || 'Save failed');
     $('saveStatus').textContent = ''; $('thanksMsg').textContent = email ? 'Your photos are saved! Your email will arrive shortly.' : 'Your photos are saved. Thanks for stopping by!';
