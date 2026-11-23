@@ -23,7 +23,6 @@ function buildMailHtml(theme = {}, event = {}) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${bg}" style="background:${bg};"><tr><td align="center" style="padding:28px 12px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="${panel}" style="max-width:560px;width:100%;background:${panel};border:1px solid ${border};border-radius:18px;overflow:hidden;">
 <tr><td align="center" style="padding:22px 18px 16px;color:${text};font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold;">${title}</td></tr>
-<tr><td align="center" style="padding:0 16px 22px;"><img src="cid:banner" width="520" alt="Event banner" style="display:block;width:100%;max-width:520px;height:auto;border-radius:10px;"></td></tr>
 <tr><td align="center" style="padding:0 16px 24px;"><img src="cid:strip" width="380" alt="Your photo strip" style="display:block;width:380px;max-width:100%;height:auto;border:6px solid ${accent};border-radius:6px;"></td></tr>
 <tr><td align="center" style="font-family:Arial,Helvetica,sans-serif;color:${text};font-size:16px;line-height:1.55;padding:0 22px 18px;">${message}</td></tr>
 <tr><td align="center" style="font-family:Georgia,'Times New Roman',serif;font-style:italic;color:${highlight};font-size:15px;padding:0 20px 24px;">${verse}</td></tr>
@@ -78,8 +77,7 @@ async function flush() {
       await tx.sendMail({ from: e.MAIL_FROM, to: j.email, subject: e.MAIL_SUBJECT || 'Your photobooth pictures!',
         text: MESSAGE + (j.event?.date || j.event?.location ? '\n\n' + [j.event.date, j.event.location].filter(Boolean).join(' | ') : '\n\nJohn 1:9'), html: buildMailHtml(j.theme || {}, j.event || {}),
         attachments: [
-          { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },
-          { filename: 'banner.png', path: path.join(P, 'img', 'banner.png'), cid: 'banner' }] });
+          { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },] });
       j.status = 'sent';
     } catch (err) { console.log('Email retry later:', err.message); if (++j.tries >= 20) j.status = 'failed'; }
     fs.writeFileSync(f, JSON.stringify(j));
