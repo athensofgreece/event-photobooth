@@ -80,14 +80,25 @@
     const palette=ranked.slice(0,6).map(v=>v.c);
     return palette;
   }
-  function buildTheme(palette){
+  function buildTheme(palette, shuffle=false){
     const colors=palette,average=colors.reduce((s,c)=>s+lum(c),0)/Math.max(1,colors.length),dark=average>.5;
     const posterDark=[...colors].sort((a,b)=>lum(a)-lum(b))[0],posterLight=[...colors].sort((a,b)=>lum(b)-lum(a))[0];
-    // Choose the most chromatic sampled color for accents, but retain the dominant neutral for the background.
     const chromatic=[...colors].sort((a,b)=>(Math.max(...b)-Math.min(...b))-(Math.max(...a)-Math.min(...a)));
-    const accent=chromatic[0],highlight=chromatic[1]||posterLight;
-    const background=dark?mix(posterDark,[22,20,24],.18):mix(posterLight,[255,250,245],.12);
-    const panel=dark?mix(posterDark,posterLight,.22):mix(posterLight,posterDark,.14);
+    let accent=chromatic[0],highlight=chromatic[1]||posterLight,background,panel;
+    if(shuffle){
+      const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+      const candidates=[...colors];
+      const randomized=[...candidates].sort(()=>Math.random()-.5);
+      background=pick(randomized);
+      accent=pick(randomized.filter(c=>c!==background));
+      highlight=pick(randomized.filter(c=>c!==background&&c!==accent));
+      const bgIsDark=lum(background)<.45;
+      background=bgIsDark?mix(background,[18,18,24],.18):mix(background,[255,250,245],.16);
+      panel=mix(background,highlight,.20);
+    }else{
+      background=dark?mix(posterDark,[22,20,24],.18):mix(posterLight,[255,250,245],.12);
+      panel=dark?mix(posterDark,posterLight,.22):mix(posterLight,posterDark,.14);
+    }
     const text=lum(background)>.5?[28,25,29]:[255,250,245];
     const buttonText=lum(accent)>.52?[25,22,25]:[255,255,255];
     return {ink:hex(background),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(accent),buttonText:hex(buttonText),panel:hex(panel),muted:hex(mix(text,background,.28)),glow:hex(mix(accent,background,.48)),dark:lum(background)>.5};
@@ -160,7 +171,7 @@
     img.onerror=()=>status.textContent='Could not load that image.';
     img.src=objectUrl;
   });
-  document.getElementById('themeShuffle').addEventListener('click',()=>{if(!extractedPalette||extractedPalette.length<2)return;const shuffled=[...extractedPalette];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}pending=buildTheme(shuffled);renderSwatches(pending);apply(pending,false);status.textContent='New color combination previewed. Shuffle again or Apply theme to save.';});
+  document.getElementById('themeShuffle').addEventListener('click',()=>{if(!extractedPalette||extractedPalette.length<2)return;pending=buildTheme(extractedPalette,true);renderSwatches(pending);apply(pending,false);status.textContent='New color combination previewed. Shuffle again or Apply theme to save.';});
   applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
   try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,false);}}
