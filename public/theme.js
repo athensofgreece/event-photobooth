@@ -106,7 +106,7 @@
     root.setProperty('--theme-panel',t.panel);root.setProperty('--theme-text',t.cream);root.setProperty('--theme-muted',t.muted);
     root.setProperty('--theme-border',t.accent);root.setProperty('--theme-glow',t.glow);
     root.setProperty('--theme-screen', 'linear-gradient(155deg,'+t.panel+','+t.ink+')');
-    root.setProperty('--theme-idle','radial-gradient(ellipse at 10% 6%,'+t.glow+',transparent 52%),radial-gradient(ellipse at 92% 96%,'+t.accent+'55,transparent 50%),linear-gradient(160deg,'+t.panel+','+t.ink+')');
+    root.setProperty('--theme-idle','radial-gradient(ellipse at 10% 6%,'+t.accent+'bb,transparent 58%),radial-gradient(ellipse at 92% 96%,'+t.highlight+'99,transparent 55%),linear-gradient(145deg,'+t.accent+','+t.panel+' 48%,'+t.ink+')');
     document.body.dataset.adaptiveTheme='on';
     if(typeof CFG!=='undefined') CFG.BG=t.ink;
     if(persist) localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
@@ -117,13 +117,14 @@
   }
   function fitEventTitle(){
     const node=titleEl?.querySelector('.eventCustomTitle');if(!node)return;
-    const text=(node.textContent||'').trim(),box=titleEl.parentElement,available=Math.max(140,(box?.clientWidth||innerWidth*.45)-12);
-    const maxSize=Math.min(innerHeight*.18,innerWidth*.16,164),minSize=32,lineHeight=1.08,maxHeight=Math.min(innerHeight*.38,(box?.clientHeight||innerHeight*.65)*.62);
+    const left=titleEl.parentElement, available=Math.max(160,(left?.clientWidth||innerWidth*.42)-8);
+    const text=(node.textContent||'').trim(),lineHeight=1.08, maxHeight=Math.max(110,innerHeight*.34);
     const ctx=document.createElement('canvas').getContext('2d');
-    function countLines(size){ctx.font='400 '+size+'px "Instrument Serif"';let lines=1,line='';for(const word of text.split(/\\s+/)){const test=line?line+' '+word:word;if(line&&ctx.measureText(test).width>available){lines++;line=word;}else line=test;}return lines;}
-    let size=maxSize,lines=countLines(size);
-    while(size>minSize&&(lines*size*lineHeight>maxHeight)){size-=2;lines=countLines(size);}
-    titleEl.style.width=available+'px';node.style.width='100%';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.lineHeight=lineHeight;node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
+    let size=Math.min(innerHeight*.17,available*.22,150),minSize=36;
+    function linesAt(fontSize){ctx.font='400 '+fontSize+'px "Instrument Serif"';let count=1,line='';for(const word of text.split(/\\s+/)){const candidate=line?line+' '+word:word;if(line&&ctx.measureText(candidate).width>available){count++;line=word;}else line=candidate;}return count;}
+    let lines=linesAt(size);
+    while(size>minSize&&lines*size*lineHeight>maxHeight){size-=2;lines=linesAt(size);}
+    titleEl.style.width=available+'px';titleEl.style.maxWidth=available+'px';node.style.display='block';node.style.width='100%';node.style.maxWidth=available+'px';node.style.fontSize=size+'px';node.style.lineHeight=lineHeight;node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
   }
   function applyBranding(title,logo,persist=false){
     if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;node.style.fontSize='clamp(24px,12vw,150px)';fitEventTitle();}else titleEl.innerHTML=originalTitle;}
