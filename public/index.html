@@ -218,7 +218,7 @@ async function compose() {
 }
 
 async function session() {
-  shots = []; shotImgs = []; stripOn = true; loop();
+  shots = []; shotImgs = []; $('saveStatus').textContent = ''; stripOn = true; loop();
   if (CFG.PREP > 0) { show('cd'); $('shotLbl').textContent = 'Get ready! Photos start in…'; $('dots').innerHTML = ''; for (let n = CFG.PREP; n > 0; n--) { tick(n); await sleep(1000); } }
   for (let i = 1; i <= CFG.COUNT; i++) {
     show('cd'); $('shotLbl').textContent = `Photo ${i} of ${CFG.COUNT}`; $('dots').innerHTML = Array.from({ length: CFG.COUNT }, (_, k) => `<i class="${k < i - 1 ? 'done' : k === i - 1 ? 'now' : ''}"></i>`).join('');
