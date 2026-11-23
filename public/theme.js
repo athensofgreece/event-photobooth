@@ -25,7 +25,7 @@
     #adaptiveTheme{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid rgba(80,50,40,.25)}
     #adaptiveTheme input[type=file]{font-size:12px;padding:5px}
     #adaptiveTheme button{font-size:13px;padding:8px 10px}
-    .eventCustomTitle{font:400 min(17vh,19vw)/1.05 "Instrument Serif",serif;letter-spacing:.02em;color:#fff;text-shadow:0 0 30px rgba(255,255,255,.4)}
+    .eventCustomTitle{display:block;width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere;font-family:"Instrument Serif",serif;font-weight:400;line-height:1.08;letter-spacing:.015em;text-shadow:0 0 18px var(--theme-glow,transparent)}
     #admin{max-height:calc(100vh - 76px);overflow:auto}
     body[data-adaptive-theme="on"] #idle{background:var(--theme-idle)!important}
     body[data-adaptive-theme="on"] #review,body[data-adaptive-theme="on"] #thanks{background:var(--theme-screen)!important}
@@ -81,15 +81,15 @@
     return [accent,...other];
   }
   function buildTheme(palette){
-    const accent=palette[0], avg=palette.reduce((s,c)=>s+lum(c),0)/palette.length;
-    const dark=avg>.56;
-    const base=dark?[22,20,25]:[247,245,240], text=dark?[247,244,238]:[34,31,38];
-    const acc=accent.map(v=>clamp(v,35,235));
-    const button=acc.map(v=>clamp(v+(dark?0:40),0,255));
-    const highlight=palette[1]||mix(acc,[255,255,255],.25);
-    const bg=dark?mix(base,acc,.20):mix(base,acc,.08);
-    const panel=mix(bg,acc,dark?.22:.12);
-    return {ink:hex(bg),cream:hex(text),accent:hex(acc),highlight:hex(highlight),button:hex(button),buttonText:hex(dark?[20,20,22]:[255,255,255]),panel:hex(panel),muted:hex(mix(text,bg,.38)),glow:hex(mix(acc,bg,.58)),dark};
+    const colors=palette.map(rgb), avg=colors.reduce((s,c)=>s+lum(c),0)/colors.length;
+    const dark=avg>.56, accent=colors[0].map(v=>clamp(v,35,235));
+    const sorted=[...colors].sort((a,b)=>lum(a)-lum(b)), posterDark=sorted[0], posterLight=sorted[sorted.length-1];
+    const neutralDark=[24,22,25], neutralLight=[247,244,238];
+    const base=dark?mix(neutralDark,posterDark,.48):mix(neutralLight,posterLight,.48);
+    const text=dark?neutralLight:neutralDark, button=accent.map(v=>clamp(v+(dark?0:28),0,255));
+    const highlight=colors[1]||mix(accent,[255,255,255],.25);
+    const bg=mix(base,accent,.22), panel=mix(bg,highlight,.24);
+    return {ink:hex(bg),cream:hex(text),accent:hex(accent),highlight:hex(highlight),button:hex(button),buttonText:hex(dark?[20,20,22]:[255,255,255]),panel:hex(panel),muted:hex(mix(text,bg,.38)),glow:hex(mix(accent,bg,.58)),dark};
   }
   function renderSwatches(t){
     swatches.innerHTML='';
@@ -101,7 +101,7 @@
     const root=document.documentElement.style;
     root.setProperty('--ink',t.ink);root.setProperty('--cream',t.cream);root.setProperty('--red',t.accent);root.setProperty('--rose',t.accent);
     root.setProperty('--amber',t.highlight);root.setProperty('--sun',t.highlight);root.setProperty('--mute',t.muted);
-    root.setProperty('--theme-accent',t.accent);root.setProperty('--theme-highlight',t.highlight);
+    root.setProperty('--theme-accent',t.accent);root.setProperty('--theme-highlight',t.highlight);root.setProperty('--theme-title',contrastColor(t.ink));
     root.setProperty('--theme-button',t.button);root.setProperty('--theme-button-text',t.buttonText);
     root.setProperty('--theme-panel',t.panel);root.setProperty('--theme-text',t.cream);root.setProperty('--theme-muted',t.muted);
     root.setProperty('--theme-border',t.accent);root.setProperty('--theme-glow',t.glow);
@@ -111,17 +111,31 @@
     if(typeof CFG!=='undefined') CFG.BG=t.ink;
     if(persist) localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
   }
+  function contrastColor(hexColor){
+    const c=rgb(hexColor),L=lum(c);
+    return L>.52?'#211f26':'#ffffff';
+  }
+  function fitEventTitle(){
+    const node=titleEl?.querySelector('.eventCustomTitle');if(!node)return;
+    const text=node.textContent||'',box=titleEl.parentElement,available=Math.max(120,(box?.clientWidth||innerWidth*.45)-12);
+    const maxSize=Math.min(innerHeight*.16,innerWidth*.16,150),minSize=24;
+    const measure=document.createElement('canvas').getContext('2d');
+    measure.font='400 '+maxSize+'px "Instrument Serif"';
+    const measured=Math.max(1,measure.measureText(text).width),size=clamp(maxSize*available/measured,minSize,maxSize);
+    node.style.fontSize=size+'px';node.style.maxWidth=available+'px';node.style.color=document.documentElement.style.getPropertyValue('--theme-title')||'#fff';
+  }
   function applyBranding(title,logo,persist=false){
-    if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;const n=title.length;node.style.fontSize=n<=12?"min(15vh,16vw)":n<=22?"min(11vh,12vw)":n<=35?"min(8vh,9vw)":"min(6vh,7vw)";}else titleEl.innerHTML=originalTitle;}
+    if(titleEl){if(title){titleEl.innerHTML='<span class="eventCustomTitle"></span>';const node=titleEl.querySelector('.eventCustomTitle');node.textContent=title;node.style.fontSize='clamp(24px,12vw,150px)';fitEventTitle();}else titleEl.innerHTML=originalTitle;}
     if(brandEl)brandEl.textContent=title?'':originalBrand;
     document.body.dataset.eventTitle=title||'';
     if(logo)logosEl.forEach(el=>{el.innerHTML='';const im=document.createElement('img');im.src=logo;im.alt='Event logo';im.style.cssText='max-height:clamp(42px,9vh,100px);max-width:min(70vw,360px);object-fit:contain';el.appendChild(im);});
     else logosEl.forEach((el,i)=>el.innerHTML=originalLogos[i]||originalLogos[0]||'');
     if(persist)localStorage.setItem('adaptivePhotoboothBranding',JSON.stringify({title,logo}));
   }
+  window.addEventListener('resize',fitEventTitle);
   function reset(){
     document.body.removeAttribute('data-adaptive-theme');
-    ['--theme-accent','--theme-highlight','--theme-button','--theme-button-text','--theme-panel','--theme-text','--theme-muted','--theme-border','--theme-glow','--theme-screen','--theme-idle'].forEach(v=>document.documentElement.style.removeProperty(v));
+    ['--theme-accent','--theme-highlight','--theme-button','--theme-button-text','--theme-panel','--theme-text','--theme-muted','--theme-border','--theme-glow','--theme-screen','--theme-idle','--theme-title'].forEach(v=>document.documentElement.style.removeProperty(v));
     document.documentElement.style.setProperty('--ink','#2c0e10');document.documentElement.style.setProperty('--cream','#fff1ea');
     document.documentElement.style.setProperty('--red','#d63c30');document.documentElement.style.setProperty('--rose','#a9524f');
     document.documentElement.style.setProperty('--amber','#ff9d8a');document.documentElement.style.setProperty('--sun','#ff9d8a');document.documentElement.style.setProperty('--mute','rgba(255,241,234,.82)');
