@@ -13,7 +13,8 @@
     <label>Event title<input id="themeTitle" type="text" placeholder="Type the event title"></label>
     <label>Event logo (optional)<input id="themeLogo" type="file" accept="image/*"></label>
     <img id="themeLogoPreview" alt="Event logo preview" style="display:none;width:100%;max-height:80px;object-fit:contain;background:#fff;border-radius:8px">
-    <div id="themeSwatches" style="display:flex;gap:6px"></div>
+    <div id="themeSwatches" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button id="themeShuffle" type="button" disabled>Shuffle colors</button>
     <small id="themeStatus">Upload an image to extract its colors and preview a matching booth theme.</small>
     <div style="display:flex;gap:8px">
       <button id="themeApply" type="button" style="flex:1" disabled>Apply theme</button>
@@ -56,7 +57,7 @@
   const titleInput=document.getElementById('themeTitle'), logoInput=document.getElementById('themeLogo'), logoPreview=document.getElementById('themeLogoPreview');
   const titleEl=document.querySelector('.title'), brandEl=document.querySelector('.brand'), logosEl=document.querySelectorAll('.logos');
   const originalTitle=titleEl?titleEl.innerHTML:'', originalBrand=brandEl?brandEl.textContent:'', originalLogos=Array.from(logosEl).map(el=>el.innerHTML);
-  let pending = null, objectUrl = null, pendingLogo = null;
+  let pending = null, objectUrl = null, pendingLogo = null, extractedPalette = null;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   const rgb = h => { const m = h.match(/[\da-f]{2}/gi); return m ? m.map(x => parseInt(x,16)) : [0,0,0]; };
@@ -142,7 +143,7 @@
     document.documentElement.style.setProperty('--red','#d63c30');document.documentElement.style.setProperty('--rose','#a9524f');
     document.documentElement.style.setProperty('--amber','#ff9d8a');document.documentElement.style.setProperty('--sun','#ff9d8a');document.documentElement.style.setProperty('--mute','rgba(255,241,234,.82)');
     if(typeof CFG!=='undefined')CFG.BG='#2c0e10';
-    localStorage.removeItem('adaptivePhotoboothTheme');localStorage.removeItem('adaptivePhotoboothBranding');applyBranding('',null,false);titleInput.value='';logoInput.value='';logoPreview.style.display='none';pendingLogo=null;pending=null;applyBtn.disabled=true;status.textContent='Original photobooth theme restored.';
+    localStorage.removeItem('adaptivePhotoboothTheme');localStorage.removeItem('adaptivePhotoboothBranding');applyBranding('',null,false);titleInput.value='';logoInput.value='';logoPreview.style.display='none';pendingLogo=null;pending=null;extractedPalette=null;applyBtn.disabled=true;document.getElementById('themeShuffle').disabled=true;status.textContent='Original photobooth theme restored.';
   }
   titleInput.addEventListener('input',()=>applyBranding(titleInput.value.trim(),pendingLogo,false));
   logoInput.addEventListener('change',()=>{const file=logoInput.files&&logoInput.files[0];if(!file)return;if(!file.type.startsWith('image/')){status.textContent='Choose an image file for the logo.';return;}const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{try{const cv=document.createElement('canvas'),s=Math.min(1,700/im.width,300/im.height);cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);pendingLogo=cv.toDataURL('image/png');logoPreview.src=pendingLogo;logoPreview.style.display='block';applyBranding(titleInput.value.trim(),pendingLogo,false);}catch(e){status.textContent='Could not process logo.';}URL.revokeObjectURL(url);};im.onerror=()=>{status.textContent='Could not load logo image.';URL.revokeObjectURL(url);};im.src=url;});
@@ -153,12 +154,13 @@
     preview.src=objectUrl;preview.style.display='block';
     const img=new Image();
     img.onload=()=>{
-      try{const p=extractPalette(img),t=buildTheme(p);pending=t;renderSwatches(t);apply(t,false);applyBtn.disabled=false;status.textContent='Theme preview is live. Tap Apply theme to save it for this kiosk.';}
+      try{extractedPalette=extractPalette(img);pending=buildTheme(extractedPalette);renderSwatches(pending);apply(pending,false);applyBtn.disabled=false;document.getElementById('themeShuffle').disabled=extractedPalette.length<2;status.textContent='Theme preview is live. Shuffle colors to explore combinations, then Apply theme to save.';}
       catch(e){status.textContent='Could not analyze that image. Try another image.';console.warn('Theme extraction failed',e);}
     };
     img.onerror=()=>status.textContent='Could not load that image.';
     img.src=objectUrl;
   });
+  document.getElementById('themeShuffle').addEventListener('click',()=>{if(!extractedPalette||extractedPalette.length<2)return;const shuffled=[...extractedPalette];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}pending=buildTheme(shuffled);renderSwatches(pending);apply(pending,false);status.textContent='New color combination previewed. Shuffle again or Apply theme to save.';});
   applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);applyBranding(titleInput.value.trim(),pendingLogo,true);status.textContent='Theme, event title, and logo saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
   try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}const branding=JSON.parse(localStorage.getItem('adaptivePhotoboothBranding')||'null');if(branding){titleInput.value=branding.title||'';pendingLogo=branding.logo||null;if(pendingLogo){logoPreview.src=pendingLogo;logoPreview.style.display='block';}applyBranding(branding.title||'',pendingLogo,false);}}
