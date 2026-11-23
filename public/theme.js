@@ -90,7 +90,7 @@
       const sw=document.createElement('span');sw.title=color;sw.style.cssText='width:28px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12);background:'+color;swatches.appendChild(sw);
     });
   }
-  function apply(t){
+  function apply(t, persist = true){
     const root=document.documentElement.style;
     root.setProperty('--ink',t.ink);root.setProperty('--cream',t.cream);root.setProperty('--red',t.accent);root.setProperty('--rose',t.accent);
     root.setProperty('--amber',t.highlight);root.setProperty('--sun',t.highlight);root.setProperty('--mute',t.muted);
@@ -102,7 +102,7 @@
     root.setProperty('--theme-idle','radial-gradient(ellipse at 10% 6%,'+t.glow+',transparent 52%),radial-gradient(ellipse at 92% 96%,'+t.accent+'55,transparent 50%),linear-gradient(160deg,'+t.panel+','+t.ink+')');
     document.body.dataset.adaptiveTheme='on';
     if(typeof CFG!=='undefined') CFG.BG=t.ink;
-    localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
+    if(persist) localStorage.setItem('adaptivePhotoboothTheme',JSON.stringify(t));
   }
   function reset(){
     document.body.removeAttribute('data-adaptive-theme');
@@ -120,13 +120,13 @@
     preview.src=objectUrl;preview.style.display='block';
     const img=new Image();
     img.onload=()=>{
-      try{const p=extractPalette(img),t=buildTheme(p);pending=t;renderSwatches(t);apply(t);applyBtn.disabled=false;status.textContent='Theme extracted and previewed. Tap Apply theme to save it for this kiosk.';}
+      try{const p=extractPalette(img),t=buildTheme(p);pending=t;renderSwatches(t);apply(t,false);applyBtn.disabled=false;status.textContent='Theme preview is live. Tap Apply theme to save it for this kiosk.';}
       catch(e){status.textContent='Could not analyze that image. Try another image.';console.warn('Theme extraction failed',e);}
     };
     img.onerror=()=>status.textContent='Could not load that image.';
     img.src=objectUrl;
   });
-  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending);status.textContent='Theme applied and saved on this kiosk.';});
+  applyBtn.addEventListener('click',()=>{if(!pending)return;apply(pending,true);status.textContent='Theme applied and saved on this kiosk.';});
   document.getElementById('themeReset').addEventListener('click',reset);
   try{const saved=JSON.parse(localStorage.getItem('adaptivePhotoboothTheme')||'null');if(saved){apply(saved);renderSwatches(saved);status.textContent='Saved adaptive theme restored. Upload a new image to change it.';}}
   catch(e){localStorage.removeItem('adaptivePhotoboothTheme');}
