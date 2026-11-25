@@ -30,16 +30,6 @@ app.get('/frame.png', (q, r) => { const f = path.join(D, 'frame.png'), d0 = path
 app.use(express.static(P));
 const b64 = d => Buffer.from(d.split(',')[1], 'base64');
 const e = process.env;
-const ADMIN_PASSWORD = e.ADMIN_PASSWORD || '';
-function adminAuth(q, r, next) {
-  const header = q.headers.authorization || '';
-  const supplied = header.startsWith('Basic ') ? Buffer.from(header.slice(6), 'base64').toString().split(':').slice(1).join(':') : '';
-  if (!ADMIN_PASSWORD) return r.status(503).json({ ok: 0, error: 'Admin password is not configured on the server.' });
-  const a = Buffer.from(supplied), b = Buffer.from(ADMIN_PASSWORD);
-  if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) return r.status(401).json({ ok: 0, error: 'Unauthorized.' });
-  next();
-}
-app.post('/api/admin/verify', rateLimit('admin-auth:', 10, 5 * 60 * 1000), adminAuth, (q, r) => r.json({ ok: 1 }));
 
 
 // ---- EDIT YOUR EMAIL MESSAGE HERE ----
@@ -65,7 +55,7 @@ ${details ? `<tr><td align="center" style="font-family:Arial,Helvetica,sans-seri
 }
 const tx = e.SMTP_HOST && nodemailer.createTransport({ host: e.SMTP_HOST, port: +e.SMTP_PORT || 587, auth: { user: e.SMTP_USER, pass: e.SMTP_PASS } });
 
-app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), adminAuth, (q, r) => {
+app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
   const data = q.body?.data;
   if (typeof data !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 8 * 1024 * 1024) {
     return r.status(400).json({ ok: 0, error: 'Invalid PNG frame or file is too large (8 MB maximum).' });
