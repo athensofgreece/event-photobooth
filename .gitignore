@@ -1,3 +1,19 @@
-node_modules/
-sessions/
+# Secrets and local configuration
 .env
+.env.*
+!.env.example
+
+# Local guest photos, uploaded frames, and session data
+sessions/
+data/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
