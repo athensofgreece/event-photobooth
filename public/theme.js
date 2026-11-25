@@ -94,11 +94,13 @@
     let accent=chromatic[0],highlight=chromatic[1]||posterLight,background,panel;
     if(shuffle){
       const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
-      const candidates=[...colors];
+      const candidates=[...new Map(colors.map(c=>[c.join(','),c])).values()];
       const randomized=[...candidates].sort(()=>Math.random()-.5);
       background=pick(randomized);
-      accent=pick(randomized.filter(c=>c!==background));
-      highlight=pick(randomized.filter(c=>c!==background&&c!==accent));
+      const accentOptions=randomized.filter(c=>c!==background);
+      accent=pick(accentOptions.length?accentOptions:randomized);
+      const highlightOptions=randomized.filter(c=>c!==background&&c!==accent);
+      highlight=pick(highlightOptions.length?highlightOptions:randomized.filter(c=>c!==accent).length?randomized.filter(c=>c!==accent):randomized);
       const bgIsDark=lum(background)<.45;
       background=bgIsDark?mix(background,[18,18,24],.18):mix(background,[255,250,245],.16);
       panel=mix(background,highlight,.20);
