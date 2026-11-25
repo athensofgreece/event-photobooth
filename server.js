@@ -70,9 +70,9 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   console.log(`Photo save request: ${payloadBytes} bytes; shots=${Array.isArray(shots) ? shots.length : 'invalid'}; final=${typeof final === 'string' ? final.length : 'missing'} chars`);
   const imagePattern = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
   const validImage = (value, maxBytes = 12 * 1024 * 1024) => typeof value === 'string' && imagePattern.test(value) && Buffer.byteLength(value, 'utf8') <= maxBytes && b64(value).length <= maxBytes;
-  if (!Array.isArray(shots) || shots.length !== 4 || !validImage(final) || shots.some(s => !validImage(s))) {
-    console.warn('Photo save validation failed: image data missing, invalid, too large, or shot count is not four');
-    return r.status(400).json({ ok: 0, error: 'Invalid photo data. Four images and a final strip are required; each must be under 12 MB.' });
+  if (!Array.isArray(shots) || shots.length < 1 || shots.length > 10 || !validImage(final) || shots.some(s => !validImage(s))) {
+    console.warn('Photo save validation failed: image data missing, invalid, too large, or shot count is outside 1–10');
+    return r.status(400).json({ ok: 0, error: 'Invalid photo data. Between 1 and 10 images and a final strip are required; each must be under 12 MB.' });
   }
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2, 8);
   const temp = path.join(S, id + '.tmp'), d = path.join(S, id);
