@@ -144,10 +144,7 @@ async function flush() {
 }
 if (tx) tx.verify().then(() => {
   console.log('Email login OK. Emails will be sent.');
-  for (const id of fs.readdirSync(S)) { // retry sessions that failed earlier
-    const f = path.join(S, id, 'session.json'); if (!fs.existsSync(f)) continue;
-    const j = JSON.parse(fs.readFileSync(f)); if (j.status === 'failed') { j.status = 'pending'; j.tries = 0; fs.writeFileSync(f, JSON.stringify(j)); }
-  }
+  // Failed messages stay failed across restarts; they are not silently reset and resent.
   flush();
 }).catch(err => console.log('EMAIL LOGIN PROBLEM:', err.message));
 setInterval(flush, 30000);
@@ -159,4 +156,5 @@ app.use((err, q, r, next) => {
   if (err.type === 'entity.parse.failed' || err.status === 400) return r.status(400).json({ ok: 0, error: 'Invalid request JSON.' });
   r.status(err.status || 500).json({ ok: 0, error: err.message || 'Request failed.' });
 });
-app.listen(3000, () => console.log('Photobooth running: http://localhost:3000' + (tx ? '' : '  (email NOT configured, see .env.example)')));
+const HOST = e.HOST || '127.0.0.1', PORT = +e.PORT || 3000;
+app.listen(PORT, HOST, () => console.log(`Photobooth running: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}` + (tx ? '' : '  (email NOT configured, see .env.example)')));
