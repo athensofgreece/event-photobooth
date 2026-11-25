@@ -105,7 +105,7 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
     fs.writeFileSync(path.join(temp, 'session.json'), JSON.stringify({ email, status: email ? 'pending' : 'no-email', tries: 0, theme: theme || null, event: event || null }));
     fs.renameSync(temp, d); // Publish only after every image has been written.
     if (email) {
-      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},\"${String(email).replace(/\"/g, '""')}\"\nn`); }
+      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},\"${String(email).replace(/\"/g, '""')}\"\n`); }
       catch (csvErr) { console.warn('Photo session saved; email log could not be updated:', csvErr.message); }
     }
     console.log(`Photo session saved successfully: ${id} (${shots.length} shots)`);
