@@ -30,8 +30,13 @@ function rateLimit(key, max, windowMs) {
 }
 app.use(express.json({ limit: '100mb' }));
 const D = path.join(__dirname, 'data'); fs.mkdirSync(D, { recursive: true });
+const CUSTOM_FRAME = path.join(D, 'custom-frame.png'), TRACKED_FRAME = path.join(D, 'frame.png');
+// Preserve an existing local frame as an ignored override on first run after this update.
+if (!fs.existsSync(CUSTOM_FRAME) && fs.existsSync(TRACKED_FRAME)) {
+  try { fs.copyFileSync(TRACKED_FRAME, CUSTOM_FRAME); } catch (err) { console.warn('Local frame migration skipped:', err.message); }
+}
 
-app.get('/frame.png', (q, r) => { const f = path.join(D, 'frame.png'), d0 = path.join(P, 'img', 'default-frame.png'); fs.existsSync(f) ? r.sendFile(f) : fs.existsSync(d0) ? r.sendFile(d0) : r.sendStatus(404); });
+app.get('/frame.png', (q, r) => { const d0 = path.join(P, 'img', 'default-frame.png'); fs.existsSync(CUSTOM_FRAME) ? r.sendFile(CUSTOM_FRAME) : fs.existsSync(TRACKED_FRAME) ? r.sendFile(TRACKED_FRAME) : fs.existsSync(d0) ? r.sendFile(d0) : r.sendStatus(404); });
 app.use(express.static(P));
 const b64 = d => Buffer.from(d.split(',')[1], 'base64');
 const e = process.env;
@@ -65,7 +70,7 @@ app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
   if (typeof data !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 8 * 1024 * 1024 || !b64(data).subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ) {
     return r.status(400).json({ ok: 0, error: 'Invalid PNG frame or file is too large (8 MB maximum).' });
   }
-  try { fs.writeFileSync(path.join(D, 'frame.png'), b64(data)); r.json({ ok: 1 }); }
+  try { fs.writeFileSync(CUSTOM_FRAME, b64(data)); r.json({ ok: 1 }); }
   catch (err) { console.error('Frame upload failed:', err); r.status(500).json({ ok: 0, error: 'Could not save the frame.' }); }
 });
 
