@@ -71,7 +71,7 @@ app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
 
 app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   const { email, final, shots, theme, event } = q.body || {};
-  if (email && (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/))) {
+  if (email && (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
     return r.status(400).json({ ok: 0, error: 'Please enter a valid email address.' });
   }
   const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
