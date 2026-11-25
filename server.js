@@ -34,7 +34,7 @@ const CUSTOM_FRAME = path.join(D, 'custom-frame.png'), TRACKED_FRAME = path.join
 // Preserve only a locally modified frame as an ignored override; leave the tracked default untouched.
 if (!fs.existsSync(CUSTOM_FRAME) && fs.existsSync(TRACKED_FRAME)) {
   try {
-    const bytes = fs.readFileSync(TRACKED_FRAME), gitHash = crypto.createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${bytes.length}\\0`), bytes])).digest('hex');
+    const bytes = fs.readFileSync(TRACKED_FRAME), gitHash = crypto.createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${bytes.length}\0`), bytes])).digest('hex');
     if (gitHash !== 'cc9fdff2ee48a67300200433183e5c9f658c177a') fs.copyFileSync(TRACKED_FRAME, CUSTOM_FRAME);
   } catch (err) { console.warn('Local frame migration skipped:', err.message); }
 }
