@@ -1,4 +1,4 @@
-const express = require('express'), fs = require('fs'), path = require('path'), nodemailer = require('nodemailer');
+const express = require('express'), fs = require('fs'), path = require('path'), nodemailer = require('nodemailer'), crypto = require('crypto');
 const app = express(), S = path.join(__dirname, 'sessions'), P = path.join(__dirname, 'public');
 fs.mkdirSync(S, { recursive: true });
 // Basic security headers. This booth is intended for trusted local-network use.
@@ -31,9 +31,12 @@ function rateLimit(key, max, windowMs) {
 app.use(express.json({ limit: '100mb' }));
 const D = path.join(__dirname, 'data'); fs.mkdirSync(D, { recursive: true });
 const CUSTOM_FRAME = path.join(D, 'custom-frame.png'), TRACKED_FRAME = path.join(D, 'frame.png');
-// Preserve an existing local frame as an ignored override on first run after this update.
+// Preserve only a locally modified frame as an ignored override; leave the tracked default untouched.
 if (!fs.existsSync(CUSTOM_FRAME) && fs.existsSync(TRACKED_FRAME)) {
-  try { fs.copyFileSync(TRACKED_FRAME, CUSTOM_FRAME); } catch (err) { console.warn('Local frame migration skipped:', err.message); }
+  try {
+    const bytes = fs.readFileSync(TRACKED_FRAME), gitHash = crypto.createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${bytes.length}\\0`), bytes])).digest('hex');
+    if (gitHash !== 'cc9fdff2ee48a67300200433183e5c9f658c177a') fs.copyFileSync(TRACKED_FRAME, CUSTOM_FRAME);
+  } catch (err) { console.warn('Local frame migration skipped:', err.message); }
 }
 
 app.get('/frame.png', (q, r) => { const d0 = path.join(P, 'img', 'default-frame.png'); fs.existsSync(CUSTOM_FRAME) ? r.sendFile(CUSTOM_FRAME) : fs.existsSync(TRACKED_FRAME) ? r.sendFile(TRACKED_FRAME) : fs.existsSync(d0) ? r.sendFile(d0) : r.sendStatus(404); });
