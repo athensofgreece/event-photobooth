@@ -254,22 +254,14 @@ $('retake').onclick = () => { testMode = false; ac(); session(); };
 $('sndIn').checked = SOUND; $('mirIn').checked = MIRROR;
 $('sndIn').onchange = e => { SOUND = e.target.checked; localStorage.snd = SOUND ? '1' : '0'; if (SOUND) { ac(); tone(880, .15); } };
 $('mirIn').onchange = e => { MIRROR = e.target.checked; localStorage.mir = MIRROR ? '1' : '0'; cam.style.transform = MIRROR ? 'scaleX(-1)' : 'none'; };
-let adminAuthorization = '';
-$('gear').onclick = async () => {
-  if ($('admin').classList.contains('on')) { $('admin').classList.remove('on'); adminAuthorization = ''; return; }
-  const password = prompt('Enter booth admin password to open settings:');
-  if (!password) return;
-  const authorization = 'Basic ' + btoa('admin:' + password);
-  try {
-    const response = await fetch('/api/admin/verify', { method: 'POST', headers: { Authorization: authorization } });
-    if (!response.ok) { $('adminMsg').textContent = response.status === 503 ? 'Admin password is not configured on the server.' : 'Incorrect admin password.'; return; }
-    adminAuthorization = authorization; $('adminMsg').textContent = ''; $('admin').classList.add('on');
-  } catch { $('adminMsg').textContent = 'Could not verify admin access. Is the server running?'; }
+$('gear').onclick = () => {
+  $('admin').classList.toggle('on');
+  $('adminMsg').textContent = '';
 };
 $('camSel').onchange = e => { localStorage.cam = e.target.value; startCam(e.target.value); };
 $('frameIn').onchange = e => { const f = e.target.files[0]; if (!f) return; const i = new Image();
   i.onload = async () => { const k = Math.min(1, 3000 / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
-    try { const r = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminAuthorization }, body: JSON.stringify({ data: c.toDataURL('image/png') }) }); if (!r.ok) throw 0; loadFrame(); }
+    try { const r = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: c.toDataURL('image/png') }) }); if (!r.ok) throw 0; loadFrame(); }
     catch { $('adminMsg').textContent = 'Could not save the frame. Make sure the booth is still running (npm start).'; } };
   i.onerror = () => $('adminMsg').textContent = 'That file could not be read as an image.'; i.src = URL.createObjectURL(f); };
 $('test').onclick = async () => { if (!cam.videoWidth) { $('adminMsg').textContent = 'Camera not ready yet.'; return; }
