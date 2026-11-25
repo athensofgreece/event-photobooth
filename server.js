@@ -71,7 +71,7 @@ app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
 
 app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   const { email, final, shots, theme, event } = q.body || {};
-  if (email && (typeof email !== 'string' || email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) {
+  if (email && (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/))) {
     return r.status(400).json({ ok: 0, error: 'Please enter a valid email address.' });
   }
   const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
@@ -93,7 +93,7 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
     fs.writeFileSync(path.join(temp, 'session.json'), JSON.stringify({ email, status: email ? 'pending' : 'no-email', tries: 0, theme: theme || null, event: event || null }));
     fs.renameSync(temp, d); // Publish only after every image has been written.
     if (email) {
-      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${String(email).replace(/\"/g, '\\"')}\n`); }
+      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},\"${String(email).replace(/\"/g, '\\"')}\"\n`); }
       catch (csvErr) { console.warn('Photo session saved; email log could not be updated:', csvErr.message); }
     }
     console.log(`Photo session saved successfully: ${id} (${shots.length} shots)`);
