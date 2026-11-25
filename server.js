@@ -11,6 +11,11 @@ app.use((q, r, next) => {
   next();
 });
 const requestLimits = new Map();
+// Prune expired entries so repeated clients cannot grow this map indefinitely.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of requestLimits) if (now - entry.start >= 10 * 60 * 1000) requestLimits.delete(key);
+}, 5 * 60 * 1000).unref();
 function rateLimit(key, max, windowMs) {
   return (q, r, next) => {
     const now = Date.now(), entry = requestLimits.get(key + (q.ip || q.socket.remoteAddress));
@@ -66,6 +71,9 @@ app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
 
 app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   const { email, final, shots, theme, event } = q.body || {};
+  if (email && (typeof email !== 'string' || email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) {
+    return r.status(400).json({ ok: 0, error: 'Please enter a valid email address.' });
+  }
   const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
   console.log(`Photo save request: ${payloadBytes} bytes; shots=${Array.isArray(shots) ? shots.length : 'invalid'}; final=${typeof final === 'string' ? final.length : 'missing'} chars`);
   const imagePattern = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -85,7 +93,7 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
     fs.writeFileSync(path.join(temp, 'session.json'), JSON.stringify({ email, status: email ? 'pending' : 'no-email', tries: 0, theme: theme || null, event: event || null }));
     fs.renameSync(temp, d); // Publish only after every image has been written.
     if (email) {
-      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${email}\n`); }
+      try { fs.appendFileSync(path.join(S, 'emails.csv'), `${id},${String(email).replace(/\"/g, '\\"')}\n`); }
       catch (csvErr) { console.warn('Photo session saved; email log could not be updated:', csvErr.message); }
     }
     console.log(`Photo session saved successfully: ${id} (${shots.length} shots)`);
@@ -102,19 +110,25 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
 let busy = false;
 async function flush() {
   if (!tx || busy) return; busy = true;
-  for (const id of fs.readdirSync(S)) {
-    const f = path.join(S, id, 'session.json'); if (!fs.existsSync(f)) continue;
-    const j = JSON.parse(fs.readFileSync(f)); if (j.status !== 'pending') continue;
-    try {
-      await tx.sendMail({ from: e.MAIL_FROM, to: j.email, subject: e.MAIL_SUBJECT || 'Your photobooth pictures!',
-        text: MESSAGE + (j.event?.date || j.event?.location ? '\n\n' + [j.event.date, j.event.location].filter(Boolean).join(' | ') : '\n\nJohn 1:9'), html: buildMailHtml(j.theme || {}, j.event || {}),
-        attachments: [
-          { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },] });
-      j.status = 'sent';
-    } catch (err) { console.log('Email retry later:', err.message); if (++j.tries >= 20) j.status = 'failed'; }
-    fs.writeFileSync(f, JSON.stringify(j));
-  }
-  busy = false;
+  try {
+    for (const id of fs.readdirSync(S)) {
+      const f = path.join(S, id, 'session.json'); if (!fs.existsSync(f)) continue;
+      let j;
+      try { j = JSON.parse(fs.readFileSync(f, 'utf8')); }
+      catch (readErr) { console.warn('Skipping unreadable email queue entry:', id, readErr.message); continue; }
+      if (j.status !== 'pending') continue;
+      try {
+        await tx.sendMail({ from: e.MAIL_FROM, to: j.email, subject: e.MAIL_SUBJECT || 'Your photobooth pictures!',
+          text: MESSAGE + (j.event?.date || j.event?.location ? '\n\n' + [j.event.date, j.event.location].filter(Boolean).join(' | ') : '\n\nJohn 1:9'), html: buildMailHtml(j.theme || {}, j.event || {}),
+          attachments: [
+            { filename: 'photobooth.jpg', path: path.join(S, id, 'final.jpg'), cid: 'strip' },] });
+        j.status = 'sent';
+      } catch (err) { console.log('Email retry later:', err.message); if (++j.tries >= 20) j.status = 'failed'; }
+      try { fs.writeFileSync(f, JSON.stringify(j)); }
+      catch (writeErr) { console.warn('Email queue status could not be saved:', id, writeErr.message); }
+    }
+  } catch (err) { console.error('Email queue processing failed:', err.message); }
+  finally { busy = false; }
 }
 if (tx) tx.verify().then(() => {
   console.log('Email login OK. Emails will be sent.');
