@@ -15,7 +15,7 @@ Built for weddings, church gatherings, and other live events.
 ## Key features
 
 - **Multi-shot capture:** the webcam takes a sequence of shots and combines them into a strip using a transparent frame image. **[VERIFY: composed in the browser with Canvas]**
-- **Offline-safe email queue:** a background worker retries failed sends every 30 seconds.
+- **Offline-safe email queue:** a background worker retries pending sends every 30 seconds (up to 20 attempts; failed jobs stay failed after restarts).
 - **Session logging:** each guest session gets its own folder with a `session.json` file, and addresses are logged to `emails.csv`.
 - **Swappable frames:** upload a new overlay frame from the kiosk UI, no code change needed.
 - **Kiosk-ready:** runs full-screen in Chrome on a standalone machine.
@@ -63,7 +63,7 @@ cp .env.example .env     # then fill in your SMTP details
 npm start
 ```
 
-Open `http://localhost:3000`. For a real event, run Chrome full-screen:
+Open `http://localhost:3000`. The server defaults to binding to `127.0.0.1` (this computer only) for safer kiosk operation. For a real event, run Chrome full-screen:
 
 ```bash
 chrome --kiosk http://localhost:3000
@@ -81,6 +81,8 @@ Without SMTP settings the app still runs. It just logs that email is not configu
 | `SMTP_PASS` | `your-app-password` | Gmail needs an app password with 2-Step Verification on |
 | `MAIL_FROM` | `"Our Photobooth <yourbooth@gmail.com>"` | From line |
 | `MAIL_SUBJECT` | `Your photobooth pictures!` | Subject line |
+| `HOST` | `127.0.0.1` | Server bind address (default is localhost only) |
+| `PORT` | `3000` | Server port |
 
 ## Project structure
 
@@ -95,13 +97,16 @@ Without SMTP settings the app still runs. It just logs that email is not configu
 
 ## Known limitations
 
-- Designed for one trusted kiosk on a local machine. The API has no authentication, so don't expose it to the internet.
-- Port 3000 is fixed in code. **[VERIFY / consider `process.env.PORT`]**
+- Designed for one trusted kiosk on a local machine. The API has no authentication; the server defaults to `127.0.0.1` and should not be exposed to the internet.
+- To allow other devices on your trusted LAN, set `HOST=0.0.0.0` in `.env` (this intentionally exposes the booth to your network; only do so on a trusted network).
+- Photos and email records remain stored locally until manually deleted; there is no automatic retention policy yet.
 - No automated tests yet.
 
 ## Roadmap
 
-- [ ] Add `PORT` and email-retry limits to `.env`
+- [x] Add `HOST` and `PORT` configuration
+- [x] Keep failed email jobs failed after server restarts
+- [ ] Add safe session retention / cleanup controls
 - [ ] Add tests for the email queue's retry behavior
 - [ ] Split `server.js` into routes, queue, and storage modules
 - [ ] Optional print or QR-code download for guests
