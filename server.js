@@ -62,7 +62,7 @@ const tx = e.SMTP_HOST && nodemailer.createTransport({ host: e.SMTP_HOST, port: 
 
 app.post('/api/frame', rateLimit('frame:', 5, 60 * 1000), (q, r) => {
   const data = q.body?.data;
-  if (typeof data !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 8 * 1024 * 1024) {
+  if (typeof data !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 8 * 1024 * 1024 || !b64(data).subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ) {
     return r.status(400).json({ ok: 0, error: 'Invalid PNG frame or file is too large (8 MB maximum).' });
   }
   try { fs.writeFileSync(path.join(D, 'frame.png'), b64(data)); r.json({ ok: 1 }); }
@@ -76,8 +76,12 @@ app.post('/api/session', rateLimit('session:', 12, 5 * 60 * 1000), (q, r) => {
   }
   const payloadBytes = Buffer.byteLength(JSON.stringify(q.body || {}));
   console.log(`Photo save request: ${payloadBytes} bytes; shots=${Array.isArray(shots) ? shots.length : 'invalid'}; final=${typeof final === 'string' ? final.length : 'missing'} chars`);
-  const imagePattern = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
-  const validImage = (value, maxBytes = 12 * 1024 * 1024) => typeof value === 'string' && imagePattern.test(value) && Buffer.byteLength(value, 'utf8') <= maxBytes && b64(value).length <= maxBytes;
+  const imagePattern = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
+  const validImage = (value, maxBytes = 12 * 1024 * 1024) => {
+    if (typeof value !== 'string' || !imagePattern.test(value) || Buffer.byteLength(value, 'utf8') > maxBytes || b64(value).length > maxBytes) return false;
+    const bytes = b64(value);
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  };
   if (!Array.isArray(shots) || shots.length < 1 || shots.length > 10 || !validImage(final) || shots.some(s => !validImage(s))) {
     console.warn('Photo save validation failed: image data missing, invalid, too large, or shot count is outside 1–10');
     return r.status(400).json({ ok: 0, error: 'Invalid photo data. Between 1 and 10 images and a final strip are required; each must be under 12 MB.' });
