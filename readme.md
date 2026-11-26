@@ -1,116 +1,186 @@
 # 📸 Event Photobooth
 
-A kiosk photobooth for live events. Guests take a multi-shot photo strip, and it is emailed to them automatically, even when the venue Wi-Fi drops.
+A browser-based event photobooth kiosk built with Node.js and Express. Guests can take a multi-photo strip, preview or retake their photos, and optionally receive the final strip by email. Photo sessions are saved locally first, so email delivery can continue in the background—even when venue Wi-Fi is unreliable.
 
-![Screenshot of the photobooth kiosk screen](photobooth-screenshot.png)
+![Photobooth screenshot](photobooth-screenshot.png)
 
-## Overview
+## ✨ Features
 
-Event venues often have unreliable internet. A photobooth that sends photos straight to email fails exactly when guests are watching.
+- **Multi-shot photo strips** — Capture a sequence of photos with a countdown and combine them into a single photo strip.
+- **Live camera preview** — Select a camera, mirror the preview/photos, and optionally enable countdown sounds.
+- **Retakes** — Review the strip and retake the session before sending or saving.
+- **Custom photo frames** — Upload a PNG overlay from the booth settings.
+- **Adaptive Theme** — Upload an event poster, invitation, or reference image to generate a matching color palette locally in the browser. Preview and shuffle colors, then apply or reset the theme.
+- **Event customization** — Set event title, subtitle/details, date/time, location, and an optional event logo.
+- **Email delivery** — Send photo strips through SMTP (such as Gmail or Brevo SMTP).
+- **Local-first saving** — Images and session details are saved to the local machine before email is attempted.
+- **Background email queue** — Pending emails are retried every 30 seconds, up to 20 attempts. Failed items remain marked as failed after restart instead of being silently requeued.
+- **Kiosk-friendly interface** — Designed to run full-screen in Chrome for events.
 
-This app saves every session to local disk first, then sends emails from a background queue that retries until they go through. The guest never waits on the network.
+## 🧰 Tech stack
 
-Built for weddings, church gatherings, and other live events.
-
-## Key features
-
-- **Multi-shot capture:** the webcam takes a sequence of shots and combines them into a strip using a transparent frame image. **[VERIFY: composed in the browser with Canvas]**
-- **Offline-safe email queue:** a background worker retries pending sends every 30 seconds (up to 20 attempts; failed jobs stay failed after restarts).
-- **Session logging:** each guest session gets its own folder with a `session.json` file, and addresses are logged to `emails.csv`.
-- **Swappable frames:** upload a new overlay frame from the kiosk UI, no code change needed.
-- **Kiosk-ready:** runs full-screen in Chrome on a standalone machine.
-
-## Tech stack
-
-| Layer | Tools |
+| Area | Technology |
 | --- | --- |
-| Server | Node.js 20.6+, Express 4 |
-| Email | Nodemailer over SMTP (Gmail app password or Brevo) |
-| Storage | File system: JSON session files and a CSV log |
-| Front end | HTML, CSS, JavaScript, Canvas API, `getUserMedia` |
+| Runtime | Node.js 20.6+ |
+| Server | Express 4 |
+| Email | Nodemailer + SMTP |
+| Front end | HTML, CSS, JavaScript |
+| Camera | Web Media API (`getUserMedia`) |
+| Photo composition | Canvas API |
+| Storage | Local files (JPEG, JSON, CSV) |
 
-## Architecture and design decisions
+## 🚀 Getting started
 
-```text
-Browser (kiosk)                         Node/Express server
-┌──────────────────────┐   POST /api/session   ┌──────────────────────────┐
-│ webcam → capture     │ ────────────────────▶ │ decode base64 → sessions/│
-│ compose strip        │                       │ write session.json       │
-│ (frame from /frame)  │ ◀──────────────────── │ append to emails.csv     │
-└──────────────────────┘      { ok }           └────────────┬─────────────┘
-                                                            │ every 30 s
-                                                  ┌─────────▼─────────┐
-                                                  │ flush(): send via │
-                                                  │ SMTP, retry later │
-                                                  └───────────────────┘
-```
+### Requirements
 
-- **Disk first, network second.** Writing to disk before emailing means a network failure can't lose a guest's photos.
-- **Background retry loop.** A `setInterval` worker (`flush()`) is separate from the request path, so slow or failed email never blocks the kiosk.
-- **Plain files instead of a database.** One machine and one event don't need a DB, and the output is easy to inspect or copy off the laptop.
-- **Base64 over JSON.** Images travel as base64 and are decoded with `Buffer`. This keeps the API simple, with the request body limit raised to handle photo sizes.
-- **Frame is a replaceable file.** `/frame.png` serves your uploaded frame, or falls back to a default.
+- Node.js **20.6 or newer**
+- Chrome or another modern browser with camera support
+- Webcam/camera access
+- SMTP credentials if email delivery is needed
 
-## Quickstart
-
-**Requirements:** Node.js **20.6 or newer** (the start script uses `--env-file`), and Chrome.
+### Installation
 
 ```bash
 git clone https://github.com/athensofgreece/event-photobooth.git
 cd event-photobooth
 npm install
-cp .env.example .env     # then fill in your SMTP details
+```
+
+Create a local environment file from the example:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS/Linux:**
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your SMTP settings (see [Email configuration](#-email-configuration)). Then start the kiosk:
+
+```bash
 npm start
 ```
 
-Open `http://localhost:3000`. The server defaults to binding to `127.0.0.1` (this computer only) for safer kiosk operation. For a real event, run Chrome full-screen:
+Open [http://localhost:3000](http://localhost:3000) in Chrome. Allow camera access when prompted.
 
-```bash
-chrome --kiosk http://localhost:3000
+For full-screen kiosk use, open Chrome in kiosk mode:
+
+**Windows:**
+```powershell
+chrome.exe --kiosk http://localhost:3000
 ```
 
-Without SMTP settings the app still runs. It just logs that email is not configured.
+## ⚙️ Booth settings
 
-### Configuration (`.env`)
+Open **Settings & frame** from the kiosk to access booth controls.
 
-| Variable | Example | Purpose |
-| --- | --- | --- |
-| `SMTP_HOST` | `smtp.gmail.com` | Mail server |
-| `SMTP_PORT` | `587` | Mail port |
-| `SMTP_USER` | `yourbooth@gmail.com` | Sender login |
-| `SMTP_PASS` | `your-app-password` | Gmail needs an app password with 2-Step Verification on |
-| `MAIL_FROM` | `"Our Photobooth <yourbooth@gmail.com>"` | From line |
-| `MAIL_SUBJECT` | `Your photobooth pictures!` | Subject line |
-| `HOST` | `127.0.0.1` | Server bind address (default is localhost only) |
-| `PORT` | `3000` | Server port |
+- Choose a camera
+- Upload or preview a PNG photo frame
+- Adjust the pre-capture countdown
+- Set the countdown between photos
+- Toggle countdown sounds
+- Toggle mirrored preview/photos
+- Test the frame with a sample photo
 
-## Project structure
+### Adaptive Theme
+
+1. Open booth settings.
+2. Upload a reference image such as a poster, invitation, or event graphic.
+3. Review the extracted color swatches and theme preview.
+4. Use **Shuffle colors** to explore variations.
+5. Add event title, subtitle/details, date/time, location, and optional logo.
+6. Select **Apply theme** to use the theme, or **Reset** to restore the default appearance.
+
+Palette extraction runs locally in the browser and does not require an external API.
+
+## ✉️ Email configuration
+
+Email is optional. The photobooth can still capture and save sessions without SMTP credentials.
+
+Configure the following values in your local `.env` file:
+
+| Variable | Description |
+| --- | --- |
+| `SMTP_HOST` | SMTP server hostname (e.g., `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (commonly `587`) |
+| `SMTP_USER` | SMTP account username/email |
+| `SMTP_PASS` | SMTP password or provider-specific app password |
+| `MAIL_FROM` | Sender display name and address (e.g., `Event Photobooth <booth@example.com>`) |
+| `MAIL_SUBJECT` | Email subject line |
+| `HOST` | Server bind address; defaults to `127.0.0.1` |
+| `PORT` | Server port; defaults to `3000` |
+
+Example SMTP setup for Gmail:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=yourbooth@gmail.com
+SMTP_PASS=your-gmail-app-password
+MAIL_FROM="Event Photobooth <yourbooth@gmail.com>"
+MAIL_SUBJECT=Your photobooth photos are ready!
+HOST=127.0.0.1
+PORT=3000
+```
+
+For Gmail, use a Google App Password (with 2-Step Verification enabled), not your normal account password. Other SMTP providers, including Brevo, can be used with their SMTP credentials and server settings.
+
+**Never commit your real `.env` file or email credentials.**
+
+## 💾 Where data is saved
+
+Photobooth sessions are stored locally in the `sessions/` directory, created when the server runs. Each saved session contains the captured images and a `session.json` file with session/email status and event/theme information. When an email address is supplied, the address is also recorded in `sessions/emails.csv`.
+
+- Photos are saved before email delivery is attempted.
+- Email queue status is stored with the session.
+- There is currently no automatic session/photo retention or cleanup. Remove saved session folders manually when appropriate.
+
+## 🗂️ Project structure
 
 ```text
-├── server.js        # Express server, API routes, background email queue
-├── public/          # Kiosk UI, fonts, default frame
-├── data/            # Active overlay frame (frame.png)
-├── sessions/        # Created at runtime: guest folders and emails.csv
-├── .env.example     # Config template
-└── package.json
+event-photobooth/
+├── server.js
+├── package.json
+├── package-lock.json
+├── .env.example
+├── data/
+│   └── frame.png
+└── public/
+    ├── index.html
+    ├── theme.js
+    └── img/
+        └── default-frame.png
 ```
 
-## Known limitations
+The `sessions/` directory is generated at runtime and is not intended to be committed.
 
-- Designed for one trusted kiosk on a local machine. The API has no authentication; the server defaults to `127.0.0.1` and should not be exposed to the internet.
-- To allow other devices on your trusted LAN, set `HOST=0.0.0.0` in `.env` (this intentionally exposes the booth to your network; only do so on a trusted network).
-- Photos and email records remain stored locally until manually deleted; there is no automatic retention policy yet.
-- No automated tests yet.
+## 🔐 Security notes
 
-## Roadmap
+This project is intended for a **single, trusted event kiosk**.
 
-- [x] Add `HOST` and `PORT` configuration
-- [x] Keep failed email jobs failed after server restarts
-- [ ] Add safe session retention / cleanup controls
-- [ ] Add tests for the email queue's retry behavior
-- [ ] Split `server.js` into routes, queue, and storage modules
-- [ ] Optional print or QR-code download for guests
+- The server binds to `127.0.0.1` by default, making it accessible only from the local computer.
+- The API does not have user authentication. Do not expose it to the public internet.
+- To allow access from other devices on a trusted local network, set `HOST=0.0.0.0` in `.env`. Only do this on a network you trust and understand.
+- Uploads and API requests have size and validation checks, and the photo/frame endpoints use rate limits.
+- Keep SMTP credentials in your private `.env` file. Do not share or commit credentials.
 
-## License
+## 🧭 Limitations
+
+- Intended for one booth/server at a time; it is not a multi-user cloud service.
+- Email sending requires working internet and valid SMTP settings, though capture and local saving can work without email.
+- Guests' photos, session data, and email records are stored on the booth computer until manually cleaned up.
+- No automated test suite is currently included.
+
+## 🛣️ Roadmap
+
+- [ ] Session retention and cleanup controls
+- [ ] Automated tests for saving and email retry behavior
+- [ ] Refactor server logic into smaller modules
+- [ ] Guest-friendly QR/download or printing options
+
+## 📄 License
 
 MIT
